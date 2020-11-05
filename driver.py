@@ -21,5 +21,5 @@ cMatrix.var_names_make_unique()
 print(cMatrix)
 print(type(cMatrix))
 obj = MAST(cMatrix)
-
+print(obj)
 
