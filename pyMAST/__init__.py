@@ -1,0 +1,1 @@
+from pyMAST.objectFile import MAST
