@@ -4,11 +4,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pyMAST", # Replace with your own username
+    name="pyCONTRA", # Replace with your own username
     version="1.0",
     author="Lord Devil",
     author_email="Gods of ABIN",
-    description="Implementation of MAST framework in python",
+    description="Implementation of Contrafold framework in python",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
