@@ -1,8 +1,16 @@
 # Driver Test Code in here
-from pyCONTRA import getArgumentsObject
+from pyCONTRA import *
 
 args = getArgumentsObject()
-if(args.training_mode=="predict"):
-    print("Basil: AI Champion")
-elif(args.training_mode=="train"):
-    print("Ritvik: Statistics God")
+print(f"Training mode: {args.training_mode}")
+print(f"Use constraints: {args.use_constraints}")
+print(f"Use evidence: {args.use_evidence}")
+
+# MakeFileDescription
+
+if(args.gradient_sanity_check):
+    RunGradientSanityCheck(args)
+elif(args.training_mode!=""):
+    RunTrainingMode(args)
+else:
+    RunPredictionMode(args)
