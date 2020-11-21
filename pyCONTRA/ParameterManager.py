@@ -51,3 +51,6 @@ class ParameterManager:
 
     def GetLogicalIndex(self, physical_ptr: tuple) ->int:
         pass
+
+    def GetNumLogicalParameters(self):
+        return len(self.logical_to_physical)
