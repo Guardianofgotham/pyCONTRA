@@ -58,5 +58,6 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
                 pass
             if output_posteriors_destination!="":
                 pass
-        computation_wrapper.Predict(computation_wrapper, w, args.gamma, args.log_base)  
+        computation_wrapper.Predict(computation_wrapper, w, args.gamma, args.log_base) 
+    print("Inside Prediction")
     computation_engine.StopComputeNodes()

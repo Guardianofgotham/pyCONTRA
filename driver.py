@@ -6,6 +6,7 @@ print(f"Training mode: {args.training_mode}")
 print(f"Use constraints: {args.use_constraints}")
 print(f"Use evidence: {args.use_evidence}")
 
+description = list()
 # MakeFileDescription
 
 if(args.gradient_sanity_check):
@@ -13,4 +14,4 @@ if(args.gradient_sanity_check):
 elif(args.training_mode!=""):
     RunTrainingMode(args)
 else:
-    RunPredictionMode(args)
+    RunPredictionMode(args, description)

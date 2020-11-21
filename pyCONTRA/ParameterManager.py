@@ -11,12 +11,12 @@ class ParameterManager:
         self.logical_to_physical = list()
         self.logical_name_to_index = dict()
 
-    def __init__(self, rhs: ParameterManager):
-        self.names = rhs.names.copy()
-        self.groups = rhs.groups.copy()
-        self.physical_to_logical = rhs.physical_to_logical.copy()
-        self.logical_to_physical = rhs.logical_to_physical.copy()
-        self.logical_name_to_index = rhs.logical_name_to_index.copy()
+    # def __init__(self, rhs: ParameterManager):
+    #     self.names = rhs.names.copy()
+    #     self.groups = rhs.groups.copy()
+    #     self.physical_to_logical = rhs.physical_to_logical.copy()
+    #     self.logical_to_physical = rhs.logical_to_physical.copy()
+    #     self.logical_name_to_index = rhs.logical_name_to_index.copy()
 
     def clearParameters(self):
         self.names.clear()
