@@ -1,3 +1,5 @@
 import argparse
+from pyCONTRA.ParameterManager import *
+
 def RunPredictionMode(args: argparse.Namespace):
-    pass;
+    parameter_manager = ParameterManager()
