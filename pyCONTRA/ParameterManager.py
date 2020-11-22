@@ -54,3 +54,6 @@ class ParameterManager:
 
     def GetNumLogicalParameters(self):
         return len(self.logical_to_physical)
+
+    def GetNumParameterGroups(self):
+        pass
