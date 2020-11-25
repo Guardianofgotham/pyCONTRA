@@ -97,14 +97,14 @@ class ComputationEngine(DistributedComputationBase):
         # endif
         result.clear()
         result = [0]*len(self.description)
-        result[nonshared.index] = max_entropy/shared.log_base +max_loss
+        result[nonshared.index] = max_entropy/shared.log_base + max_loss
         result *= self.description[nonshared.index].weight
 
     def ComputeGradientNormBound(self, result: list,   nonshared: NonSharedInfo):
         sstruct: SStruct = self.description[nonshared.index].sstruct
         self.inference_engine.LoadSequence(sstruct)
 
-        w= [1]*self.parameter_manager.GetNumLogicalParameters()
+        w = [1]*self.parameter_manager.GetNumLogicalParameters()
         self.inference_engine.LoadValues(w)
         self.inference_engine.UpdateEvidenceStructures()
 
@@ -112,15 +112,16 @@ class ComputationEngine(DistributedComputationBase):
         max_L1_norm = self.inference_engine.GetViterbiScore()
         result.clear()
         result = [0]*len(self.description)
-        result[nonshared.index] = max_L1_norm 
+        result[nonshared.index] = max_L1_norm
 
     def ComputeLoss(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo):
         sstruct: SStruct = self.description[nonshared.index].sstruct
         self.inference_engine.LoadSequence(sstruct)
-        w = [shared.w + self.parameter_manager.GetNumLogicalParameters()]+shared.w
+        w = [shared.w + self.parameter_manager.GetNumLogicalParameters()] + \
+            shared.w
         self.inference_engine.LoadValues(w*shared.log_base)
         self.inference_engine.UpdateEvidenceStructures()
-        solution=None
+        solution = None
         if(self.options.viterbi_parsing):
             self.inference_engine.ComputeViterbi()
             solution = SStruct(sstruct)
@@ -130,9 +131,11 @@ class ComputationEngine(DistributedComputationBase):
             self.inference_engine.ComputeOutside()
             self.inference_engine.ComputePosterior()
             solution = SStruct(sstruct)
-            solution.SetMapping(self.inference_engine.PredictPairingsPosterior(shared.gamma))
+            solution.SetMapping(
+                self.inference_engine.PredictPairingsPosterior(shared.gamma))
         if not shared.use_less:
-            raise Exception("Must be using loss function in order to compute loss.")
+            raise Exception(
+                "Must be using loss function in order to compute loss.")
         self.inference_engine.LoadValues([0]*len(w))
         self.inference_engine.UseConstraints(solution.GetMapping())
         self.inference_engine.UpdateEvidenceStructures()
@@ -144,11 +147,70 @@ class ComputationEngine(DistributedComputationBase):
         result *= self.description[nonshared.index].weight
         result[-1] /= shared.log_base
 
-    def ComputeFunctionAndGradient(self, result,   shared,   nonshared, need_gradient):
-        pass
+    def ComputeFunctionAndGradient(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo, need_gradient: bool):
+        sstruct = self.description[nonshared.index].sstruct
+        self.inference_engine.LoadSequence(sstruct)
 
-    def ComputeMStepFunctionAndGradient(self, result,   shared,   nonshared, need_gradient):
-        pass
+        w = [shared.w + self.parameter_manager]*shared.w
+        self.inference_engine.LoadValues(w*shared.log_base)
+        #if defined(HAMMING_LOSS)
+        # if (shared.use_loss) inference_engine.UseLoss(sstruct.GetMapping(), shared.log_base * RealT(HAMMING_LOSS));
+        #endif
+        unconditional_score = None
+        unconditional_counts = list()
+
+        if shared.use_nonsmooth:
+            self.inference_engine.ComputeViterbi()
+            unconditional_score = self.inference_engine.GetViterbiScore()
+            if need_gradient:
+                unconditional_counts = self.inference_engine.ComputeViterbiFeatureCounts()
+        else:
+            self.inference_engine.ComputeInside()
+            unconditional_score = self.inference_engine.ComputeLogPartitionCoefficient()
+            if need_gradient:
+                self.inference_engine.ComputeOutside()
+                unconditional_counts = self.inference_engine.ComputeFeatureCountExpectations()
+        
+        conditional_score=None
+        conditional_counts = list()
+
+        self.inference_engine.UseConstraints(sstruct.GetMapping())
+        if shared.use_nonsmooth:
+            self.inference_engine.ComputeViterbi()
+            conditional_score = self.inference_engine.GetViterbiScore()
+            if need_gradient:
+                conditional_counts = self.inference_engine.ComputeViterbiFeatureCounts()
+        else:
+            self.inference_engine.ComputeInside()
+            conditional_score = self.inference_engine.ComputeLogPartitionCoefficient()
+            if need_gradient:
+                self.inference_engine.ComputeOutside()
+                conditional_counts = self.inference_engine.ComputeFeatureCountExpectations()
+        
+        result.clear()
+        if need_gradient:
+            result = unconditional_counts-conditional_counts
+        if(conditional_score>unconditional_score):
+            raise Exception("Conditional score cannot exceed unconditional score.")
+        result.append(unconditional_score-conditional_score)
+
+        if conditional_score < NEG_INF/2:
+            print(f"Unexpected bad parse for file: {self.descriptions[nonshared.index].input_filename}")
+            result = [0]*len(result)
+        if NONCONVEX_MULTIPLIER!=0:
+            pass
+
+        if result[-1]<0:
+            if result[-1] < 1e-6:
+                print(f"Encountered negative function value for {self.descriptions[nonshared.index].input_filename}: {result[-1]}")
+                self.parameter_manager.WriteToFile(None, w)
+        result *= self.description[nonshared.index].weight
+        result[-1] /= shared.log_base
+
+    def ComputeMStepFunctionAndGradient(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo, need_gradient: bool):
+        sstruct = self.description[nonshared.index].sstruct
+        self.inference_engine.LoadSequence(sstruct)
+        w = [shared.w+self.parameter_manager]
 
     def ComputeGammaMLEFunctionAndGradient(self, result,   shared,   nonshared, need_gradient):
         pass

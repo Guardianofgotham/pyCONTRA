@@ -10,6 +10,7 @@ description = list()
 # MakeFileDescription
 
 if(args.gradient_sanity_check):
+    print("Banana")
     RunGradientSanityCheck(args, description)
 elif(args.training_mode != "supervised" or args.training_mode != "em" or args.training_mode != "em-sgd"):
     RunTrainingMode(args, description)
