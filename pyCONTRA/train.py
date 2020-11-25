@@ -41,7 +41,7 @@ def RunTrainingMode(args: argparse.Namespace, description: list):
     if(args.holdout_ratio <= 0):
         regularization_coefficients = list()
         if(args.training_mode=="em"):
-            optimization_wrapper.TrainEM(units, w, regularization_coefficients)
+            optimization_wrapper.TrainEM(units, w, regularization_coefficients, train_max_iter)
         elif args.training_mode=="em-sgd":
             print(parameter_manager.GetNumParameterGroups())
             if parameter_manager.GetNumParameterGroups()!=2:
