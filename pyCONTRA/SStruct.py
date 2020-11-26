@@ -85,7 +85,7 @@ class SStruct:
                 raise Exception("Not all sequences have the same length.")
         
         consensus_found = False
-        for i in sequences:
+        for i in self.sequences:
             is_consensus  = True
             for j in i[1:]:
                 if(is_consensus==False):
@@ -160,7 +160,12 @@ class SStruct:
     def LoadBPP2TSEQ(self, filename: str):   
         pass
     def FilterSequence(self, sequence: str):   
-        pass
+        if(sequence[0] != "@"):
+            raise Exception("Improperly formatted sequence.")
+        for i in range(1, len(sequence)):
+            if(sequence[i] == "-"):
+                sequence[i] = "."
+                break
     def FilterParens(self, sequence: str):   
         if(sequence[0] != "@"):
             raise Exception("Improperly formatted sequence.")
@@ -198,7 +203,7 @@ class SStruct:
                 break
             else:
                 raise Exception(
-                    "Unexpected character {} in parenthesized structure.", parens[i])
+                    "Unexpected character {} in parenthesized structure.".format(parens[i]))
             if(len(stack)!=0):
                 raise Exception("Parenthesis mismatch.")
 
@@ -207,23 +212,111 @@ class SStruct:
         
                 
     def ConvertMappingToParens(self, mapping: list):   
-        pass
+        assert !ContainsPseudoknots(), "Should not attempt to convert a mapping with pseudoknots."
+        parens = "@"
+
+        for i in range(1,len(mapping)):
+            if (mapping[i] == UNKNOWN):
+                parens += "?"
+            else if (mapping[i] == UNPAIRED):
+                parens += "."
+            else if (mapping[i] > i):
+                parens += "("
+            else if (mapping[i] < i):
+                parens += ")"
+            else
+                raise Exception("Invalid structure.")
+
     def ValidateMapping(self, mapping: list):   
-        pass
+        if(len(mapping)==0 or mapping[0] != UNKNOWN):
+            raise Exception("Invalid mapping.")
+        for i in range(1,len(mapping)):
+            if(mapping[i] == UNPAIRED or mapping[i] == UNKNOWN):
+                continue
+            if(mapping[i] < 1 or mapping[i] >= len(mapping)):
+                raise Exception("Position {} of sequence maps to invalid psotion".format(i))
+            if(mapping[mapping[i]]!=i):
+                raise Exception("Positions {} and {} of sequence do not map to each other.".format(i,mapping[i]))
+            if(mapping[i] == i):
+                raise Exception("Position {} of sequence maps to itself.".format(i))
+
     def ContainsPseudoknots(self):   
-        pass
+        stack = list()
+        for i in range(1,len(self.mapping)):
+            if(self.mapping[i] == UNPAIRED or self.mapping == UNKNOWN):
+                continue
+            if(self.mapping[i] > i):
+                stack.append(i)
+            elif(self.mapping < i):
+                if(stack[-1] == self.mapping[i]):
+                    stack.pop(-1)
+                else:
+                    return True
+            else:
+                raise Exception("Invalid structure: positions may not map to themselves.")
+        
+        if(len(stack)!=0):
+            raise Exception(
+                "Invalid structure: bad pairings found.")
+        return False
+
     def RemoveNoncomplementaryPairings(self, seq=0):   
-        pass
+        if(seq < 0 or seq >= len(self.sequences)):
+            raise Exception("Refernece to invalid sequence.")
+        assert len(self.sequences[seq]) == len(self.mapping), "Inconsistent lengths."
+        for i in range(1, len(self.mapping)):
+            if(mapping[i] > i and !IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
+                self.mapping[self.mapping[i]] = UNPAIRED
+                self.mapping[i] = UNPAIRED
+
     def WriteBPSEQ(self, outfile, seq=0):   
-        pass
+        if(seq<0 or seq>= len(self.sequences)):
+            raise Exception("Refernece to invalid sequence.")
+        assert len(self.sequences[seq]) == len(self.mapping), "Inconsistent lengths."
+        for i in range(1,len(self.mapping)):
+            outfile.write(str(i)+" "+self.sequences[seq][i] +" "+ self.mapping[i])
+
     def WriteParens(self, outfile):   
-        pass
+        if(ContainsPseudoknots()):
+            raise Exception("Cannot write strucutre containing pseudoknot using parenthesized format.")
+
+        for i in range(len(self.sequences)):
+            outfile.write(">"+self.names[i])
+            outfile.write(self.sequences[i][1:])
+        
+        outfile.write(">structure")
+        outfile.write(ConvertMappingToParens(self.mapping)[1:])
     def ComputePercentIdentity(self):   
-        pass
+        pid = 0.0
+        for i in range(len(self.sequences)):
+            for j in range(i+1,len(self.sequences)):
+                identities = 0
+                len1=0
+                len2 = 0
+                s = self.sequences[i]
+                t = self.sequences[j]
+
+                for k in range(len(s)):
+                    if(s[k].isalpha()):
+                        len1+=1
+                    if(t[k].isalpha()):
+                        len2 += 1
+                    if(s[k].isalpha() and s[k].upper() == t[k].upper()):
+                        identities+=1
+                
+                den = min(len1,len2)
+                if(den==0):
+                    pairwise_pid = 0.0
+                else:
+                    pairwise_pid = double(identities) / den
+
+                    
+
     def ComputePositionBasedSequenceWeights(self, ):   
         pass
     def SetMapping(self, mapping):   
-        pass
+        self.mapping = mapping
+        ValidateMapping(mapping)
     def GetNames(self):   
         pass
     def GetSequence(self):
