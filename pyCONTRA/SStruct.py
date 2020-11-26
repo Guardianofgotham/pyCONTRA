@@ -108,7 +108,53 @@ class SStruct:
     def LoadRAW(self, filename: str):   
         pass
     def LoadBPSEQ(self, filename: str):   
-        pass
+        self.names = list()
+        self.sequences = list()
+        self.mapping = list()
+
+        self.names.append(filename)
+        self.sequences.append("@")
+        self.mapping.append(UNKNOWN)
+
+        try:
+            data = open(filename).readlines()
+        except:
+            raise Exception("Unable to open input file: " + filename)
+        
+        row = 0
+        for i in data:
+            tokens = i.split()
+            if(!tokens[0].isnumeric):
+                raise Exception("Could not read row number:", filename)
+            if(tokens[0]<=0):
+                raise Exception("Row numbers must be positive:", filename)
+            if(tokens[0] != (row+1)):
+                raise Exception(
+                    "Rows of BPSEQ file must occur in increasing order:", filename.)
+            row = tokens[0]
+
+            try:
+                tokens[1]
+            except:
+                raise Exception ("Expected sequence letter after row number:", filename)
+            if(len(tokens[1])!=1):
+                raise Exception(
+                    "Expected sequence letter after row number:", filename)
+            ch = tokens[1][0]
+            try:
+                tokens[2]
+            except:
+                raise Exception(
+                    "Expected mapping letter after sequence letter:", filename)
+            if(!tokens[2].isnumeric):
+                raise Exception("Could not read matching row number:", filename)
+            if(tokens[2] <= -1):
+                raise Exception(
+                    "Matching row numbers must be greater than or equal to -1:", filename)
+            self.sequences[-1].append(ch)
+            self.mapping.append(tokens[2])
+
+
     def LoadBPP2SEQ(self, filename: str):   
         pass
     def LoadBPP2TSEQ(self, filename: str):   
@@ -116,7 +162,7 @@ class SStruct:
     def FilterSequence(self, sequence: str):   
         pass
     def FilterParens(self, sequence: str):   
-        pass
+        
     def ConvertParensToMapping(self, parens: str):   
         pass
     def ConvertMappingToParens(self, mapping: list):   
