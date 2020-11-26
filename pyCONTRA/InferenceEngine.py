@@ -43,6 +43,44 @@ class InferenceEngine:
         score_paired_position = []
         score_unpaired_position_raw = []
         score_paired_position_raw = []
+        score_base_pair = list()
+        for i in range(M+1):
+            score_base_pair.append([])
+            for j in range(M+1):
+                score_base_pair[-1].append((0, 0))
+
+        score_terminal_mismatch = list()
+        for i in range(M+1):
+            score_terminal_mismatch.append([])
+            for j in range(M+1):
+                score_terminal_mismatch[-1].append([])
+                for k in range(M+1):
+                    score_terminal_mismatch[-1][-1].append([])
+                    for l in range(M+1):
+                        score_terminal_mismatch[-1][-1][-1].append((0, 0))
+
+        score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
+        cache_score_hairpin_length = [0]*(D_MAX_HAIRPIN_LENGTH+1)
+        score_internal_explicit = None
+        score_bulge_length_at_least = None
+        score_internal_length_at_least = None
+        score_internal_symmetric_length_at_least = None
+        score_internal_asymmetry_at_least = None
+        score_bulge_0x1_nucleotides = None
+        score_bulge_1x0_nucleotides = None
+        score_internal_1x1_nucleotides = None
+        score_helix_stacking = None
+        score_helix_closing = None
+        score_multi_base = None
+        score_multi_unpaired = None
+        score_multi_paired = None
+        score_dangle_left = None
+        score_dangle_right = None
+        score_external_unpaired = None
+        score_external_paired = None
+        log_score_evidence = None
+        cache_score_single = None
+        cache_score_helix_sums = None
         pass
 
     def FillScores(self):
@@ -228,7 +266,7 @@ class InferenceEngine:
 
     def ComputeESS(self):
         pass
-    
+
     def ComputeGammaMLESum(self, ev_cpd_id,  ignorePairing,  usePosterior,  which_data):
         pass
 
