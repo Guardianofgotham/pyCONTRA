@@ -162,9 +162,50 @@ class SStruct:
     def FilterSequence(self, sequence: str):   
         pass
     def FilterParens(self, sequence: str):   
+        if(sequence[0] != "@"):
+            raise Exception("Improperly formatted sequence.")
+        for i in range(1,len(sequence)):
+            if(sequence[i]=="-"):
+                sequence[i] = "."
+                break
+            elif(sequence[i] == "?" or sequence[i] == "." or sequence[i] == "(" or sequence[i] == ")"):
+                break
+            else:
+                raise Exception("Unexpected character {} in parenthesized structure.", sequence[i])
         
+        return sequence;
+
     def ConvertParensToMapping(self, parens: str):   
-        pass
+        mapping = [UNKNOWN for i in range(len(parens))]
+        stack = list()
+
+        assert parens[0] == "@", "Invalid parenthesized string."
+        for i in range(1,len(parens)):
+            if(parens[i] == "?"):
+                break
+            elif(parens[i] == "."):
+                mapping[i] = UNPAIRED
+                break
+            elif(parens[i] == "("):
+                stack.append(i)
+                break
+            elif(parens[i] == ")"):
+                if(len(stack)==0):
+                    raise Exception("Parenthesis mismatch.")
+                mapping[i] = stack[-1]
+                mapping[stack[-1]] = i
+                stack.pop(-1)
+                break
+            else:
+                raise Exception(
+                    "Unexpected character {} in parenthesized structure.", parens[i])
+            if(len(stack)!=0):
+                raise Exception("Parenthesis mismatch.")
+
+            return mapping
+
+        
+                
     def ConvertMappingToParens(self, mapping: list):   
         pass
     def ValidateMapping(self, mapping: list):   
