@@ -26,8 +26,23 @@ class ComputationWrapper():
     def ComputeGradientNormBound(self,  units,   C,  log_base):
         pass
 
-    def Predict(self,  units,   w,  gamma,  log_base):
-        pass
+    def Predict(self,  units: list,   w: list,  gamma,  log_base):
+        if not self.computation_engine.IsMasterNode():
+            raise Exception("Routine should only be called by master process.")
+        if len(w) > SHARED_PARAMETER_SIZE:
+            raise Exception(f"SHARED_PARAMETER_SIZE in Config.hpp too small; increase to at least {len(w)}.")
+        if self.GetOptions().verbose_output:
+            print(f"Performing predictions with gamma={gamma}...")
+        ret = list()
+        self.shared_info.command = ProcessingType.PREDICT
+        for i in range(0, len(w)):
+            self.shared_info.w[i] = w[i]
+        self.shared_info.gamma=gamma
+        self.shared_info.log_base=log_base
+        self.nonshared_info = self.nonshared_info[:len(units)]
+        for i in range(len(units)):
+            self.nonshared_info[i].index = units[i]
+        self.computation_engine.DistributeComputation(ret, self.shared_info, self.nonshared_info)
 
     def ComputeLoss(self,  units,   w,  log_base):
         pass

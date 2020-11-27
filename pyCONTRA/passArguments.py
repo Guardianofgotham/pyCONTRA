@@ -1,5 +1,6 @@
 import argparse
 from .helper import *
+from pyCONTRA.FileDescription import *
 import os
 GAMMA_DEFAULT = 1.0
 REGULARIZATION_DEFAULT = 1.0
@@ -7,19 +8,24 @@ TRAIN_MAX_ITER_DEFAULT = 10
 HYPERPARAM_DATA_DEFAULT = 1
 
 
-def verfiyFileNames(args: argparse.Namespace):
+def verfiyFileNames(args: argparse.Namespace, files: list):
     if(args.parameter_filename != ""):
         checkFileExists(args.parameter_filename)
+        files.append(args.parameter_filename)
     if(args.train_examplefile != ""):
         checkFileExists(args.train_examplefile)
+        files.append(args.train_examplefile)
     if(args.train_initweights_filename != ""):
         checkFileExists(args.train_initweights_filename)
+        files.append(args.train_initweights_filename)
     if(args.train_priorweights_filename != ""):
         checkFileExists(args.train_priorweights_filename)
+        files.append(args.train_priorweights_filename)
     return;
 
 
 def getArgumentsObject():
+    fNames =list()
     parseObject = argparse.ArgumentParser(
         description="Arguments passed to pyContra")
     parseObject.add_argument("--training_mode", type=str, default="",
@@ -107,5 +113,11 @@ def getArgumentsObject():
                              required=False, help="weight on data-only examples: float")
 
     args = parseObject.parse_args()
-    verfiyFileNames(args)
-    return args
+    verfiyFileNames(args, fNames)
+    return args, fNames
+
+def MakeFileDescriptions(args: argparse.Namespace, filenames: list, description: list):
+    description.clear()
+    for i in range(len(filenames)):
+        description.append(FileDescription(filenames[i],args.allow_noncomplementary, args.num_data_sources))
+    description = sorted(description)

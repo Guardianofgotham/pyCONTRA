@@ -1,13 +1,13 @@
 # Driver Test Code in here
 from pyCONTRA import *
 
-args = getArgumentsObject()
+args, fileNames = getArgumentsObject()
 print(f"Training mode: {args.training_mode}")
 print(f"Use constraints: {args.use_constraints}")
 print(f"Use evidence: {args.use_evidence}")
 
 description = list()
-# MakeFileDescription
+MakeFileDescriptions(args, fileNames, description)
 
 if(args.gradient_sanity_check):
     print("Banana")

@@ -82,9 +82,17 @@
 # That's it!
 ######################################################################
 
+from pyCONTRA.SharedInfo import *
+from pyCONTRA.NonSharedInfo import *
+import time
+
 class DistributedComputationBase:
-    def __init__(self):
-        pass
+    def __init__(self, toggle_verbose: bool):
+        self.toggle_verbose = toggle_verbose
+        self.processing_time = 0
+        self.total_time = 0
+        self.id = 0
+        self.num_procs = 1
 
     def DoComputation(self, result, shared_data, nonshared_data):
         pass
@@ -98,8 +106,22 @@ class DistributedComputationBase:
 
 
     ## perform distributed computation (to be called by master node)
-    def DistributeComputation(self, result, shared_data, nonshared_data):
-        pass
+    def DistributeComputation(self, result: list, shared_data: SharedInfo, nonshared_data: NonSharedInfo):
+        if self.id!=0:
+            raise Exception("Routine should only be called by master process.")
+        if (len(nonshared_data)<=0):
+            raise Exception("Must submit at least one work description for processing.")
+        starting_time = time()
+        result.clear()
+        partial_result = list()
+        for j in range(0, len(nonshared_data)):
+            self.DoComputation(partial_result, shared_data, nonshared_data)
+            if(len(result)==0):
+                result = [0]*len(partial_result)
+            elif len(result)!=len(partial_result):
+                raise Exception("Encountered return values of different size.")
+        result+=partial_result
+        
 
     ## some simple routines for dealing with node IDs
     def IsComputeNode(self):
