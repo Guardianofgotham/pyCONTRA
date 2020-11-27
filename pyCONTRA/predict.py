@@ -3,17 +3,19 @@ from pyCONTRA.ParameterManager import *
 from pyCONTRA.InferenceEngine import *
 from pyCONTRA.ComputationEngine import *
 from pyCONTRA.ComputationWrapper import *
+from pyCONTRA.Defaults import *
 
 
 def RunPredictionMode(args: argparse.Namespace, description: list):
     parameter_manager = ParameterManager()
     inference_engine = InferenceEngine()
     inference_engine.RegisterParameters(parameter_manager)
-    computation_engine = ComputationEngine()
-    computation_wrapper = ComputationWrapper()
+    computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
+    computation_wrapper = ComputationWrapper(computation_engine)
 
     if(computation_engine.IsComputeNode()):
         computation_engine.RunAsComputeNode()
+        return
 
     output_parens_destination = args.output_parens_destination
     output_bpseq_destination = args.output_bpseq_destination
@@ -23,13 +25,11 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
     if(args.parameter_filename != ""):
         parameter_manager.ReadFromFile(args.parameter_filename, w)
     else:
-        if PROFILE != 0:
-            pass
+        if(args.allow_noncomplementary):
+            w = GetDefaultNoncomplementaryValues()
         else:
-            if(args.allow_noncomplementary):
-                pass
-            else:
-                pass
+            w = GetDefaultComplementaryValues()
+    
 
     if args.gamma < 0:
         if output_parens_destination != "":

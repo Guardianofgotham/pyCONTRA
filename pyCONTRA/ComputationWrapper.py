@@ -1,6 +1,16 @@
+from pyCONTRA.ComputationEngine import *
 class ComputationWrapper():
-    def __init__(self):
-        pass
+    def __init__(self, computation_engine: ComputationEngine):
+        self.computation_engine = computation_engine
+        self.shared_info = SharedInfo()
+        self.nonshared_info = NonSharedInfo()
+        self.cached_toggle_use_nonsmooth = False
+        self.cached_toggle_use_loss = False
+        self.cached_units = list()
+        self.cached_w = list()
+        self.cached_function = list()
+        self.cached_function_gammamle = list()
+        self.cached_gradient_gammamle = list()
 
     # retrieve list of work units
     def GetAllUnits(self):
