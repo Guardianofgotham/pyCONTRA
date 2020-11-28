@@ -103,15 +103,20 @@ class SStruct:
                     raise Exception(
                         "More than one consensus base-pairing structure found.")
                 else:
-                    self.mapping = ConvertParensToMapping(FilterParens(i))
+                    self.mapping = self.ConvertParensToMapping(self.FilterParens(i))
                     self.sequences.pop(1)
                     self.names.pop(1)
                     consensus_found = True
                     continue
 
         if(consensus_found == False):
-            self.mapping = [SStruct.UNKNOWN for i in range(len(self.sequences[0]))]
-
+            self.mapping = [SStruct.UNKNOWN]*len(self.sequences[0])
+        else:
+            self.has_struct=True
+        for i in range(self.num_data_sources):
+            self.unpaired_potentials.append([SStruct.UNKNOWN_POTENTIAL]*len(self.sequences[0]))
+        self.has_evidence=False
+        #self.which_evidence.resize(num_data_sources,false)
     def LoadRAW(self, filename: str):
         pass
 
@@ -344,7 +349,8 @@ class SStruct:
         pass
 
     def GetMapping(self):
-        pass
+        return self.mapping
+        
 
     def GetUnpairedPotential(self, which: int):
         pass

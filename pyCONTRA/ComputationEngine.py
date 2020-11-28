@@ -62,7 +62,7 @@ class ComputationEngine(DistributedComputationBase):
         elif self.command == ProcessingType.COMPUTE_HV:
             self.ComputeHessianVectorProduct(result, shared, nonshared)
         elif self.command == ProcessingType.PREDICT:
-            Predict(result, shared, nonshared)
+            self.Predict(result, shared, nonshared)
         else:
             assert False, "Unknown command type"
     # methods to act on individual work units
