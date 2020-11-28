@@ -181,7 +181,7 @@ class SStruct:
                 break
             else:
                 raise Exception(
-                    "Unexpected character {} in parenthesized structure.", sequence[i])
+                    "Unexpected character {} in parenthesized structure.".format(sequence[i]))
 
         return sequence
 
