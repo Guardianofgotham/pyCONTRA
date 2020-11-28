@@ -46,8 +46,8 @@ class SStruct:
             iss = s.split(" ")
             if(iss[0].isnumeric and len(iss[1]) == 1 and iss[2].isnumeric):
                 FileFormat = "BPSEQ"
-        else:
-            FileFormat = "RAW"
+            else:
+                FileFormat = "RAW"
         
         return format
 

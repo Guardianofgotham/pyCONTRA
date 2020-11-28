@@ -523,5 +523,10 @@ class ComputationEngine(DistributedComputationBase):
         result.clear()
         result.extend([update_gammamle_sssum, update_gammamle_num_examples])
 
+
+
+        
+
+
     def ComputeFunctionAndGradientSE(self, result,   shared,   nonshared, need_gradient):
         pass

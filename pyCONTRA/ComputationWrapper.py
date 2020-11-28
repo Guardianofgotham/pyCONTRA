@@ -14,7 +14,10 @@ class ComputationWrapper():
 
     # retrieve list of work units
     def GetAllUnits(self):
-        return
+        ret=list()
+        for i in range(len(GetDescriptions())):
+            ret.append(i)
+        return ret
 
     # methods to act on vectors of work units
     def FilterNonparsable(self,  units):
