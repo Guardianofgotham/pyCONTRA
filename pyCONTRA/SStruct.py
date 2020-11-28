@@ -15,15 +15,22 @@ class SStruct:
         self.has_evidence = False
         self.num_data_sources = 1
         self.which_evidence = list()
+    
+    def __init__(self, filename, num_data_sources):
+        self.has_struct = False;
+        self.has_evidence = False;
+        self.num_data_sources = num_data_sources;
+        self.Load(filename)
+
 
     def Load(self, filename: str):
-        FileFormat = AnalyzeFormat(filename)
+        FileFormat = self.AnalyzeFormat(filename)
         if(FileFormat == "FASTA"):
-            LoadFasta(filename)
+            self.LoadFASTA(filename)
         elif(FileFormat == "BPSEQ"):
-            LoadBPSEQ(filename)
+            self.LoadBPSEQ(filename)
         elif (FileFormat == "RAW"):
-            LoadRAW(filename)
+            self.LoadRAW(filename)
         else:
             raise Exception("Unable to determine file type.")
 
@@ -47,7 +54,7 @@ class SStruct:
             else:
                 FileFormat = "RAW"
 
-        return format
+        return FileFormat
 
     def LoadFASTA(self, filename: str):
         self.names = list()
@@ -103,7 +110,7 @@ class SStruct:
                     continue
 
         if(consensus_found == False):
-            self.mapping = [UNKNOWN for i in range(len(self.sequences[0]))]
+            self.mapping = [SStruct.UNKNOWN for i in range(len(self.sequences[0]))]
 
     def LoadRAW(self, filename: str):
         pass
@@ -115,7 +122,7 @@ class SStruct:
 
         self.names.append(filename)
         self.sequences.append("@")
-        self.mapping.append(UNKNOWN)
+        self.mapping.append(SStruct.UNKNOWN)
 
         try:
             data = open(filename).readlines()
@@ -186,7 +193,7 @@ class SStruct:
         return sequence
 
     def ConvertParensToMapping(self, parens: str):
-        mapping = [UNKNOWN for i in range(len(parens))]
+        mapping = [SStruct.UNKNOWN for i in range(len(parens))]
         stack = list()
 
         assert parens[0] == "@", "Invalid parenthesized string."
@@ -220,7 +227,7 @@ class SStruct:
         parens = "@"
 
         for i in range(1, len(mapping)):
-            if (mapping[i] == UNKNOWN):
+            if (mapping[i] == SStruct.UNKNOWN):
                 parens += "?"
             elif (mapping[i] == UNPAIRED):
                 parens += "."
@@ -232,10 +239,10 @@ class SStruct:
                 raise Exception("Invalid structure.")
 
     def ValidateMapping(self, mapping: list):
-        if(len(mapping) == 0 or mapping[0] != UNKNOWN):
+        if(len(mapping) == 0 or mapping[0] != SStruct.UNKNOWN):
             raise Exception("Invalid mapping.")
         for i in range(1, len(mapping)):
-            if(mapping[i] == UNPAIRED or mapping[i] == UNKNOWN):
+            if(mapping[i] == UNPAIRED or mapping[i] == SStruct.UNKNOWN):
                 continue
             if(mapping[i] < 1 or mapping[i] >= len(mapping)):
                 raise Exception(
@@ -250,7 +257,7 @@ class SStruct:
     def ContainsPseudoknots(self):
         stack = list()
         for i in range(1, len(self.mapping)):
-            if(self.mapping[i] == UNPAIRED or self.mapping == UNKNOWN):
+            if(self.mapping[i] == UNPAIRED or self.mapping == SStruct.UNKNOWN):
                 continue
             if(self.mapping[i] > i):
                 stack.append(i)
@@ -274,7 +281,7 @@ class SStruct:
         assert len(self.sequences[seq]) == len(
             self.mapping), "Inconsistent lengths."
         for i in range(1, len(self.mapping)):
-            if(mapping[i] > i and not self.IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
+            if(self.mapping[i] > i and not self.IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
                 self.mapping[self.mapping[i]] = UNPAIRED
                 self.mapping[i] = UNPAIRED
 
@@ -346,13 +353,16 @@ class SStruct:
         pass
 
     def GetLength(self):
-        pass
+        return len(self.mapping)-1
 
     def GetNumSequences(self):
-        pass
+        return len(self.sequences)-1
 
     def HasStruct(self):
-        pass
+        return self.has_struct
 
     def HasEvidence(self):
-        pass
+        return self.has_evidence
+    
+    def HasEvidence(self, which_data: int):
+        return self.which_evidence[which_data]

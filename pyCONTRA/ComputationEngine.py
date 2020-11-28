@@ -13,6 +13,7 @@ from pyCONTRA.ParameterManager import *
 
 class ComputationEngine(DistributedComputationBase):
     def __init__(self, options: argparse.Namespace, description: list, inference_engine: InferenceEngine, parameter_manager: ParameterManager):
+        super().__init__(options.verbose)
         self.options = options
         self.description = description
         self.inference_engine = inference_engine
@@ -23,7 +24,10 @@ class ComputationEngine(DistributedComputationBase):
 
     # routine for performing an individual work unit
     def DoComputation(self, result: list, shared: SharedInfo, nonshared: NonSharedInfo):
-        if shared.commmand == ProcessingType.CHECK_PARSABILITY:
+        print("-"*20)
+        print(shared.command == ProcessingType.CHECK_PARSABILITY)
+        print("-"*20)
+        if shared.command == ProcessingType.CHECK_PARSABILITY:
             self.CheckParsability(result, nonshared)
         elif shared.command == ProcessingType.COMPUTE_SOLUTION_NORM_BOUND:
             self.ComputeSolutionNormBound(result, shared, nonshared)
@@ -64,6 +68,8 @@ class ComputationEngine(DistributedComputationBase):
     # methods to act on individual work units
 
     def CheckParsability(self, result: list, nonshared: NonSharedInfo):
+        print(type(nonshared))
+        print(type(nonshared.index))
         sstruct: SStruct = self.description[nonshared.index].sstruct
         self.inference_engine.LoadSequence(sstruct)
         self.inference_engine.LoadValues(
@@ -524,9 +530,17 @@ class ComputationEngine(DistributedComputationBase):
         result.extend([update_gammamle_sssum, update_gammamle_num_examples])
 
 
-
-        
-
-
     def ComputeFunctionAndGradientSE(self, result,   shared,   nonshared, need_gradient):
         pass
+    
+    def GetOptions(self):
+        return self.options
+
+    def GetDescriptions(self):
+        return self.description
+
+    def GetInferenceEngine(self):
+        return self.inference_engine
+    
+    def GetParameterManager(self):
+        return self.parameter_manager
