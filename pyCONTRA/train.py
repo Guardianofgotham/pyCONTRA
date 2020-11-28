@@ -9,8 +9,8 @@ def RunTrainingMode(args: argparse.Namespace, description: list):
     parameter_manager = ParameterManager()
     inference_engine = InferenceEngine()
     inference_engine.RegisterParameters(parameter_manager)
-    computation_engine = ComputationEngine()
-    computation_wrapper = ComputationWrapper()
+    computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
+    computation_wrapper = ComputationWrapper(computation_engine)
 
     if(computation_engine.IsComputeNode()):
         computation_engine.RunAsComputeNode();

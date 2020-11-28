@@ -1,3 +1,4 @@
+'''Corresponds to Contrafold.cpp'''
 import argparse
 from pyCONTRA.ParameterManager import *
 from pyCONTRA.InferenceEngine import *
