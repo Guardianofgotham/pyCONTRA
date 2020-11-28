@@ -25,55 +25,54 @@ class ComputationEngine(DistributedComputationBase):
     # routine for performing an individual work unit
     def DoComputation(self, result: list, shared: SharedInfo, nonshared: NonSharedInfo):
         print("-"*20)
-        print(shared.command == ProcessingType.CHECK_PARSABILITY)
+        print(shared.command)
         print("-"*20)
         if shared.command == ProcessingType.CHECK_PARSABILITY:
             self.CheckParsability(result, nonshared)
         elif shared.command == ProcessingType.COMPUTE_SOLUTION_NORM_BOUND:
             self.ComputeSolutionNormBound(result, shared, nonshared)
-        elif self.command == ProcessingType.COMPUTE_GRADIENT_NORM_BOUND:
+        elif shared.command == ProcessingType.COMPUTE_GRADIENT_NORM_BOUND:
             self.ComputeGradientNormBound(result, nonshared)
-        elif self.command == ProcessingType.COMPUTE_LOSS:
+        elif shared.command == ProcessingType.COMPUTE_LOSS:
             self.ComputeLoss(result, shared, nonshared)
-        elif self.command == ProcessingType.COMPUTE_FUNCTION:
+        elif shared.command == ProcessingType.COMPUTE_FUNCTION:
             self.ComputeFunctionAndGradient(result, shared, nonshared, False)
-        elif self.command == ProcessingType.COMPUTE_GRADIENT:
+        elif shared.command == ProcessingType.COMPUTE_GRADIENT:
             self.ComputeFunctionAndGradient(result, shared, nonshared, True)
-        elif self.command == ProcessingType.COMPUTE_MSTEP_FUNCTION:
+        elif shared.command == ProcessingType.COMPUTE_MSTEP_FUNCTION:
             self.ComputeMStepFunctionAndGradient(
                 result, shared, nonshared, False)
-        elif self.command == ProcessingType.COMPUTE_MSTEP_GRADIENT:
+        elif shared.command == ProcessingType.COMPUTE_MSTEP_GRADIENT:
             self.ComputeMStepFunctionAndGradient(
                 result, shared, nonshared, True)
-        elif self.command == ProcessingType.COMPUTE_GAMMAMLE_FUNCTION:
+        elif shared.command == ProcessingType.COMPUTE_GAMMAMLE_FUNCTION:
             self.ComputeGammaMLEFunctionAndGradient(
                 result, shared, nonshared, False)
-        elif self.command == ProcessingType.COMPUTE_GAMMAMLE_GRADIENT:
+        elif shared.command == ProcessingType.COMPUTE_GAMMAMLE_GRADIENT:
             self.ComputeGammaMLEFunctionAndGradient(
                 result, shared, nonshared, True)
-        elif self.command == ProcessingType.COMPUTE_GAMMAMLE_SCALING_FACTOR:
+        elif shared.command == ProcessingType.COMPUTE_GAMMAMLE_SCALING_FACTOR:
             self.ComputeGammaMLEScalingFactor(result, shared, nonshared)
-        elif self.command == ProcessingType.CHECK_ZEROS_IN_DATA:
+        elif shared.command == ProcessingType.CHECK_ZEROS_IN_DATA:
             self.CheckZerosInData(result, shared, nonshared)
-        elif self.command == ProcessingType.COMPUTE_FUNCTION_SE:
+        elif shared.command == ProcessingType.COMPUTE_FUNCTION_SE:
             self.ComputeFunctionAndGradientSE(result, shared, nonshared, False)
-        elif self.command == ProcessingType.COMPUTE_GRADIENT_SE:
+        elif shared.command == ProcessingType.COMPUTE_GRADIENT_SE:
             self.ComputeFunctionAndGradientSE(result, shared, nonshared, True)
-        elif self.command == ProcessingType.COMPUTE_HV:
+        elif shared.command == ProcessingType.COMPUTE_HV:
             self.ComputeHessianVectorProduct(result, shared, nonshared)
-        elif self.command == ProcessingType.PREDICT:
+        elif shared.command == ProcessingType.PREDICT:
             self.Predict(result, shared, nonshared)
         else:
             assert False, "Unknown command type"
     # methods to act on individual work units
 
     def CheckParsability(self, result: list, nonshared: NonSharedInfo):
-        print(type(nonshared))
-        print(type(nonshared.index))
         sstruct: SStruct = self.description[nonshared.index].sstruct
         self.inference_engine.LoadSequence(sstruct)
         self.inference_engine.LoadValues(
             self.parameter_manager.GetNumLogicalParameters())
+        # print(sstruct.GetMapping())
         self.inference_engine.UseConstraints(sstruct.GetMapping())
         self.inference_engine.UpdateEvidenceStructures()
         self.inference_engine.ComputeViterbi()
@@ -423,12 +422,12 @@ class ComputationEngine(DistributedComputationBase):
         if (self.options.use_constraints):
             self.inference_engine.UseConstraints(sstruct.GetMapping())
         # // load parameters
-        w = [shared.w + self.parameter_manager.GetNumLogicalParameters()] * \
-            shared.w
-        self.inference_engine.LoadValues(w * shared.log_base)
+        w = shared.w[:]
+        # print(w)
+        self.inference_engine.LoadValues(w)# * shared.log_base)
         self.inference_engine.UpdateEvidenceStructures()
         # // perform inference
-        solution = SStruct()
+        solution = None
         if (self.options.viterbi_parsing):
             if (self.options.use_evidence):
                 raise Exception(
@@ -457,7 +456,7 @@ class ComputationEngine(DistributedComputationBase):
                     return
                 self.inference_engine.ComputeOutside()
                 self.inference_engine.ComputePosterior()
-            solution = SStruct(sstruct)
+            solution = SStruct(sstruct, None)
             if self.options.centroid_estimator:
                 print(f"Predicting using centroid estimator.")
                 solution.SetMapping(

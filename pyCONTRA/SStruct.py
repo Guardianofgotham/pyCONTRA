@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pyCONTRA.Utilities import *
 
 
@@ -16,11 +17,36 @@ class SStruct:
         self.num_data_sources = 1
         self.which_evidence = list()
     
-    def __init__(self, filename, num_data_sources):
-        self.has_struct = False;
-        self.has_evidence = False;
-        self.num_data_sources = num_data_sources;
-        self.Load(filename)
+    def __init__(self, sstruct: SStruct):
+        self.names = sstruct.names
+        self.sequences = sstruct.sequences
+        self.mapping = sstruct.mapping
+        self.unpaired_potentials = sstruct.unpaired_potentials
+        self.has_struct = sstruct.has_struct
+        self.has_evidence = sstruct.has_evidence
+        self.num_data_sources = sstruct.num_data_sources
+        self.which_evidence = sstruct.which_evidence
+
+    def __init__(self, filename: str, num_data_sources: int):
+        if(type(filename)!=str):
+            self.names = filename.names
+            self.sequences = filename.sequences
+            self.mapping = filename.mapping
+            self.unpaired_potentials = filename.unpaired_potentials
+            self.has_struct = filename.has_struct
+            self.has_evidence = filename.has_evidence
+            self.num_data_sources = filename.num_data_sources
+            self.which_evidence = filename.which_evidence
+        else:
+            self.names = list()
+            self.sequences = list()
+            self.mapping = list()
+            self.unpaired_potentials = list()
+            self.which_evidence = list()
+            self.has_struct = False;
+            self.has_evidence = False;
+            self.num_data_sources = num_data_sources
+            self.Load(filename)
 
 
     def Load(self, filename: str):
@@ -340,7 +366,7 @@ class SStruct:
 
     def SetMapping(self, mapping):
         self.mapping = mapping
-        ValidateMapping(mapping)
+        self.ValidateMapping(mapping)
 
     def GetNames(self):
         pass

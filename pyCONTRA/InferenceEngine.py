@@ -2,6 +2,7 @@ from __future__ import annotations
 from pyCONTRA.config import *
 from pyCONTRA.SStruct import *
 
+
 class InferenceEngine:
     DATA_LOW_THRESH = 1e-7
 
@@ -197,38 +198,35 @@ class InferenceEngine:
         pass
 
     # load parameter values
-    def LoadValues(self, alues):
+    def LoadValues(self, values):
+        # load loss function
         pass
 
-    # load loss function
     def UseLoss(self, true_mapping,  example_loss):
         pass
 
     # use Constraints
     def UseConstraints(self, true_mapping):
-        if(not(len(true_mapping)==self.L+1)):
+        # print(len(true_mapping), self.L+1)
+        if(not(len(true_mapping) == self.L+1)):
             raise Exception("Supplied mapping of incorrect length!")
-        cache_initialized=False
+        cache_initialized = False
 
-        for i in range(1,self.L+1):
-            self.allow_unpaired_position[i]=(true_mapping[i]==SStruct.UNKNOWN or true_mapping[i]==SStruct.UNPAIRED)
+        for i in range(1, self.L+1):
+            self.allow_unpaired_position[i] = (
+                true_mapping[i] == SStruct.UNKNOWN or true_mapping[i] == SStruct.UNPAIRED)
 
         for i in range(self.L+1):
-            self.allow_unpaired[self.offset[i]+i]=1
-            self.allow_paired[self.offset[i]+i]=0
-            for j in range(1,self.L+1):
-                self.allow_unpaired[self.offset[i]+j]= self.allow_unpaired[self.offset[i]+j-1] and self.allow_unpaired_position[j]
-                self.allow_paired[self.offset[i]+j] = (i>0 and (true_mapping[i] == SStruct.UNKNOWN or true_mapping[i] == j) and (true_mapping[j] == SStruct.UNKNOWN or true_mapping[j] == i) and (self.allow_noncomplementary or self.IsComplementary(i,j)))
-
-    
-
-
-
-
-
-
+            self.allow_unpaired[self.offset[i]+i] = 1
+            self.allow_paired[self.offset[i]+i] = 0
+            for j in range(1, self.L+1):
+                self.allow_unpaired[self.offset[i]+j] = self.allow_unpaired[self.offset[i] +
+                                                                            j-1] and self.allow_unpaired_position[j]
+                self.allow_paired[self.offset[i]+j] = (i > 0 and (true_mapping[i] == SStruct.UNKNOWN or true_mapping[i] == j) and (
+                    true_mapping[j] == SStruct.UNKNOWN or true_mapping[j] == i) and (self.allow_noncomplementary or self.IsComplementary(i, j)))
 
     # Viterbi inference
+
     def ComputeViterbi(self):
         pass
 

@@ -1,4 +1,4 @@
 class NonSharedInfo:
     def __init__(self):
-        self.index = -1
+        self.index = 0
     
