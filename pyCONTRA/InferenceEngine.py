@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pyCONTRA.config import *
 from pyCONTRA.SStruct import *
+from queue import Queue
 
 
 class InferenceEngine:
@@ -22,12 +23,12 @@ class InferenceEngine:
             N, SIZE2 = None, None
             A, weights = [], []
 
-        s, offset = [], []
+        self.s, self.offset = [], []
 
-        allow_unpaired_position = []
-        allow_unpaired, allow_paired = [], []
-        loss_unpaired_position = []
-        loss_unpaired, loss_paired = [], []
+        self.allow_unpaired_position = []
+        self.allow_unpaired, self.allow_paired = [], []
+        self.loss_unpaired_position = []
+        self.loss_unpaired, self.loss_paired = [], []
 
         # ## dynamic programming matrices
         FCt, F5t, FMt, FM1t = [], [], [], []
@@ -38,17 +39,17 @@ class InferenceEngine:
         FCi_ess, F5i_ess, FMi_ess, FM1i_ess = [], [], [], []
         FCo_ess, F5o_ess, FMo_ess, FM1o_ess = [], [], [], []
 
-        posterior = []
+        self.posterior = []
 
-        score_unpaired_position = []
-        score_paired_position = []
-        score_unpaired_position_raw = []
-        score_paired_position_raw = []
-        score_base_pair = list()
+        self.score_unpaired_position = []
+        self.score_paired_position = []
+        self.score_unpaired_position_raw = []
+        self.score_paired_position_raw = []
+        self.score_base_pair = list()
         for i in range(M+1):
-            score_base_pair.append([])
+            self.score_base_pair.append([])
             for j in range(M+1):
-                score_base_pair[-1].append((0, 0))
+                self.score_base_pair[-1].append((0, 0))
 
         score_terminal_mismatch = list()
         for i in range(M+1):
@@ -256,8 +257,84 @@ class InferenceEngine:
     def ComputePosterior(self):
         pass
 
-    def PredictPairingsPosterior(self,   gamma):
-        pass
+    def PredictPairingsPosterior(self,   gamma: int):
+        if(not(gamma>0)):
+            print("Non-negative gamma expected.")
+        unpaired_posterior =[]
+        score=[]
+        traceback=[]
+        
+        for i in range(1,self.L+1):
+            unpaired_posterior.append(1)
+            for j in range(i):
+                unpaired_posterior[i] -= self.posterior[self.offset[j]+i]
+            for j in range(i+1,self.L+1):
+                unpaired_posterior[i] -= self.posterior[self.offset[i]+j]
+
+        for i in range(1,self.L+1):
+            unpaired_posterior[i] /= 2 * gamma
+        score=[-1]*self.SIZE
+        traceback=[-1]*self.SIZE
+
+        #DP
+
+        for i in range(self.L,-1,-1):
+            for j in range(i,self.L+1):
+                this_score=score[self.offset[i]+j]
+                this_traceback = traceback[self.offset[i]+j];
+                if(i==j):
+                    UPDATE_MAX(this_score, this_traceback,0, 0)
+                else:
+                    if(self.allow_unpaired_position[i+1]):
+                        UPDATE_MAX(this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
+                    if (self.allow_unpaired_position[j]):
+                        UPDATE_MAX(this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
+                    if(i+2 <= j):
+                        if(self.allow_paired[self.offset[i+1]+j]):
+                            UPDATE_MAX(this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
+
+
+
+                        p1=score[self.offset[i]+i+1]
+                        p2=score[self.offset[i+1]+j]
+                        for k in range(i+1,j):
+                            UPDATE_MAX(this_score, this_traceback, (p1) + (p2), k+4)
+                            p1+=1
+                            p2 += self.L-k
+
+        solution=[SStruct.UNPAIRED]*(self.L+1)
+        solution[0] = SStruct.UNKNOWN
+        traceback_queue = Queue(0)
+        traceback_queue.put((0,self.L))
+
+        while(traceback_queue.qsize()!=0):
+            t=traceback_queue.get()
+            i=t[0]
+            j=t[1]
+
+            if(traceback[self.offset[i]+j]==-1):
+                print("should not get here ")
+                
+            elif(traceback[self.offset[i]+j]==0):
+                pass
+            elif(traceback[self.offset[i]+j]==1):
+                traceback_queue.put((i+1,j))
+                
+            elif(traceback[self.offset[i]+j]==2):
+                traceback_queue.put((i,j-1))
+            elif(traceback[self.offset[i]+j]==3):
+                solution[i+1] = j;
+                solution[j] = i+1;
+                traceback_queue.put((i+1,j-1))
+
+            else:
+                k=traceback[self.offset[i]+j]-4
+                traceback_queue.put((i,k))
+                traceback_queue.put((k,j))
+
+        return solution
+
+        
 
     def PredictPairingsPosteriorCentroid(self, gamma):
         pass

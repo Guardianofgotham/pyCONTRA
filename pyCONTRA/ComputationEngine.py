@@ -463,8 +463,7 @@ class ComputationEngine(DistributedComputationBase):
                     inference_engine.PredictPairingsPosteriorCentroid(shared.gamma))
             else:
                 print(f"Predicting using MEA estimator.")
-                solution.SetMapping(
-                    self.inference_engine.PredictPairingsPosterior(shared.gamma))
+                solution.SetMapping(self.inference_engine.PredictPairingsPosterior(shared.gamma))
         if self.options.output_parens_destination == "":
             filename = MakeOutputFilename(self.description[nonshared.index].input_filename,
                                           self.options.output_parens_destination, self.options.gamma < 0, shared.gamma)
