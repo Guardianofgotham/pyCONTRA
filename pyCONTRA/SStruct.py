@@ -312,8 +312,9 @@ class SStruct:
 
                     
 
-    def ComputePositionBasedSequenceWeights(self, ):   
-        pass
+    def ComputePositionBasedSequenceWeights(self):   
+        weights
+
     def SetMapping(self, mapping):   
         self.mapping = mapping
         ValidateMapping(mapping)
