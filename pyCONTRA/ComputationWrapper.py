@@ -20,8 +20,26 @@ class ComputationWrapper():
         return ret
 
     # methods to act on vectors of work units
-    def FilterNonparsable(self,  units):
-        pass
+    def FilterNonparsable(self,  units: list):
+        ret = []
+        if(not self.computation_engine.IsMasterNode()):
+            print("Routine should only be called by master process.")
+        parsable=[]
+        self.shared_info.command=CHECK_PARSABILITY
+
+        #self.nonshared_info.resize(units)
+        for i in range(len(units)):
+            self.nonshared_info[i].index=units[i]
+        
+        self.computation_engine.DistributeComputation(parsable,self.shared_info,self.nonshared_info)
+        for i in range(len(units)):
+            if(not(units[i] >= 0 and units[i] < int(parsable.size()))):
+                print("Out-of-bounds index.")
+            if(parsable[units[i]]):
+                ret.push_back(units[i])
+            else:
+                print("No valid parse for file: ", GetDescriptions()[units[i]].input_filename )
+        return ret
 
     def ComputeSolutionNormBound(self,  units,   C,  log_base):
         pass
