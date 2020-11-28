@@ -130,8 +130,7 @@ class SStruct:
             if(tokens[0] <= 0):
                 raise Exception("Row numbers must be positive:", filename)
             if(tokens[0] != (row+1)):
-                raise Exception(
-                    "Rows of BPSEQ file must occur in increasing order:", filename.)
+                raise Exception(f"Rows of BPSEQ file must occur in increasing order: {filename}")
             row = tokens[0]
 
             try:
