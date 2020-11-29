@@ -61,28 +61,28 @@ class InferenceEngine:
                     for l in range(M+1):
                         score_terminal_mismatch[-1][-1][-1].append((0, 0))
 
-        score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
-        cache_score_hairpin_length = [0]*(D_MAX_HAIRPIN_LENGTH+1)
-        score_internal_explicit = None
-        score_bulge_length_at_least = None
-        score_internal_length_at_least = None
-        score_internal_symmetric_length_at_least = None
-        score_internal_asymmetry_at_least = None
-        score_bulge_0x1_nucleotides = None
-        score_bulge_1x0_nucleotides = None
-        score_internal_1x1_nucleotides = None
-        score_helix_stacking = None
-        score_helix_closing = None
-        score_multi_base = None
-        score_multi_unpaired = None
-        score_multi_paired = None
-        score_dangle_left = None
-        score_dangle_right = None
-        score_external_unpaired = None
-        score_external_paired = None
-        log_score_evidence = None
-        cache_score_single = None
-        cache_score_helix_sums = None
+        self.cache_score_hairpin_length = [0]*(D_MAX_HAIRPIN_LENGTH+1)
+        self.score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
+        self.score_internal_explicit = None
+        self.score_bulge_length_at_least = None
+        self.score_internal_length_at_least = None
+        self.score_internal_symmetric_length_at_least = None
+        self.score_internal_asymmetry_at_least = None
+        self.score_bulge_0x1_nucleotides = None
+        self.score_bulge_1x0_nucleotides = None
+        self.score_internal_1x1_nucleotides = None
+        self.score_helix_stacking = None
+        self.score_helix_closing = None
+        self.score_multi_base = None
+        self.score_multi_unpaired = None
+        self.score_multi_paired = None
+        self.score_dangle_left = None
+        self.score_dangle_right = None
+        self.score_external_unpaired = None
+        self.score_external_paired = None
+        self.log_score_evidence = None
+        self.cache_score_single = None
+        self.cache_score_helix_sums =[]
 
     def FillScores(self):
         raise Exception("Not implemented")
@@ -221,6 +221,23 @@ class InferenceEngine:
         self.cache_initialized= False
         self.L=sstruct.GetLength();
         self.SIZE=(self.L+1)*(self.L+2) / 2
+        self.s=[0]*(self.L+1)
+        self.offset=[0]*(self.L+1)
+        self.allow_unpaired_position=[0]*(self.L+1)
+        self.allow_unpaired=[0]*(self.SIZE)
+        self.allow_paired=[0]*(self.SIZE)
+        self.loss_unpaired_position=[0]*(self.L+1)
+        self.loss_unpaired=[0]*(self.SIZE)
+        self.loss_paired=[0]*(self.SIZE)
+        
+        self.cache_score_helix_sums.clear()
+        self.cache_score_helix_sums=[(0,0)]*((2*self.L+1)*self.L)
+
+        
+
+
+
+
 
 
         raise Exception("Not implemented")
