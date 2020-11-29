@@ -1,9 +1,14 @@
 from pyCONTRA.ComputationEngine import *
-class ComputationWrapper():
+from pyCONTRA.SharedInfo import *
+from pyCONTRA.NonSharedInfo import *
+from pyCONTRA.ProcessingType import *
+
+
+class ComputationWrapper(object):
     def __init__(self, computation_engine: ComputationEngine):
         self.computation_engine = computation_engine
         self.shared_info = SharedInfo()
-        self.nonshared_info = NonSharedInfo()
+        self.nonshared_info = list()
         self.cached_toggle_use_nonsmooth = False
         self.cached_toggle_use_loss = False
         self.cached_units = list()
@@ -15,7 +20,7 @@ class ComputationWrapper():
     # retrieve list of work units
     def GetAllUnits(self):
         ret=list()
-        for i in range(len(GetDescriptions())):
+        for i in range(len(self.GetDescriptions())):
             ret.append(i)
         return ret
 
@@ -23,12 +28,13 @@ class ComputationWrapper():
     def FilterNonparsable(self,  units: list):
         ret = []
         if(not self.computation_engine.IsMasterNode()):
-            print("Routine should only be called by master process.")
+            raise Exception("Routine should only be called by master process.")
         parsable=[]
-        self.shared_info.command=CHECK_PARSABILITY
+        self.shared_info.command=ProcessingType.CHECK_PARSABILITY
 
         #self.nonshared_info.resize(units)
         for i in range(len(units)):
+            self.nonshared_info.append(NonSharedInfo())
             self.nonshared_info[i].index=units[i]
         
         self.computation_engine.DistributeComputation(parsable,self.shared_info,self.nonshared_info)
@@ -38,7 +44,7 @@ class ComputationWrapper():
             if(parsable[units[i]]):
                 ret.push_back(units[i])
             else:
-                print("No valid parse for file: ", GetDescriptions()[units[i]].input_filename )
+                print("No valid parse for file: ", self.GetDescriptions()[units[i]].input_filename )
         return ret
 
     def ComputeSolutionNormBound(self,  units,   C,  log_base):
@@ -47,12 +53,12 @@ class ComputationWrapper():
     def ComputeGradientNormBound(self,  units,   C,  log_base):
         pass
 
-    def Predict(self,  units: list,   w: list,  gamma,  log_base):
+    def Predict(self,  units: list,   w: list,  gamma: float,  log_base: float):
         if not self.computation_engine.IsMasterNode():
             raise Exception("Routine should only be called by master process.")
         if len(w) > SHARED_PARAMETER_SIZE:
             raise Exception(f"SHARED_PARAMETER_SIZE in Config.hpp too small; increase to at least {len(w)}.")
-        if self.GetOptions().verbose_output:
+        if self.GetOptions().verbose:
             print(f"Performing predictions with gamma={gamma}...")
         ret = list()
         self.shared_info.command = ProcessingType.PREDICT
@@ -60,8 +66,9 @@ class ComputationWrapper():
             self.shared_info.w[i] = w[i]
         self.shared_info.gamma=gamma
         self.shared_info.log_base=log_base
-        self.nonshared_info = self.nonshared_info[:len(units)]
+        self.nonshared_info.clear()
         for i in range(len(units)):
+            self.nonshared_info.append(NonSharedInfo())
             self.nonshared_info[i].index = units[i]
         self.computation_engine.DistributeComputation(ret, self.shared_info, self.nonshared_info)
 
@@ -106,8 +113,17 @@ class ComputationWrapper():
     def SanityCheckGradient(self,  units,   w):
         pass
     # getters
-    # def  Options GetOptions()  { return computation_engine.GetOptions(): }
-    # def  GetDescriptions()  { return computation_engine.GetDescriptions(): }
-    # def InferenceEngine<> GetInferenceEngine() { return computation_engine.GetInferenceEngine(): }
-    # def ParameterManager<> GetParameterManager() { return computation_engine.GetParameterManager(): }
-    # def ComputationEngine<> GetComputationEngine() { return computation_engine: }
+    def GetOptions(self):
+        return self.computation_engine.GetOptions()
+    
+    def GetDescriptions(self):
+        return self.computation_engine.GetDescriptions()
+
+    def GetInferenceEngine(self):
+        return self.computation_engine.GetInferenceEngine()
+
+    def GetParameterManager(self):
+        return self.computation_engine.GetParameterManager()
+
+    def GetComputationEngine(self):
+        return self.computation_engine

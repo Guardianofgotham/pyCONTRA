@@ -8,7 +8,7 @@ class SharedInfo:
         self.use_nonsmooth = False
         self.use_loss = False
         self.gamma = None
-        self.log_base = None
+        self.log_base = 1.0
         self.evidence_data_scale = None
         self.id_base=None
         self.id_pairing=None

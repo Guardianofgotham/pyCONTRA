@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pyCONTRA.Utilities import *
 
 
@@ -15,15 +16,47 @@ class SStruct:
         self.has_evidence = False
         self.num_data_sources = 1
         self.which_evidence = list()
+    
+    def __init__(self, sstruct: SStruct):
+        self.names = sstruct.names
+        self.sequences = sstruct.sequences
+        self.mapping = sstruct.mapping
+        self.unpaired_potentials = sstruct.unpaired_potentials
+        self.has_struct = sstruct.has_struct
+        self.has_evidence = sstruct.has_evidence
+        self.num_data_sources = sstruct.num_data_sources
+        self.which_evidence = sstruct.which_evidence
+
+    def __init__(self, filename: str, num_data_sources: int):
+        if(type(filename)!=str):
+            self.names = filename.names
+            self.sequences = filename.sequences
+            self.mapping = filename.mapping
+            self.unpaired_potentials = filename.unpaired_potentials
+            self.has_struct = filename.has_struct
+            self.has_evidence = filename.has_evidence
+            self.num_data_sources = filename.num_data_sources
+            self.which_evidence = filename.which_evidence
+        else:
+            self.names = list()
+            self.sequences = list()
+            self.mapping = list()
+            self.unpaired_potentials = list()
+            self.which_evidence = list()
+            self.has_struct = False;
+            self.has_evidence = False;
+            self.num_data_sources = num_data_sources
+            self.Load(filename)
+
 
     def Load(self, filename: str):
-        FileFormat = AnalyzeFormat(filename)
+        FileFormat = self.AnalyzeFormat(filename)
         if(FileFormat == "FASTA"):
-            LoadFasta(filename)
+            self.LoadFASTA(filename)
         elif(FileFormat == "BPSEQ"):
-            LoadBPSEQ(filename)
+            self.LoadBPSEQ(filename)
         elif (FileFormat == "RAW"):
-            LoadRAW(filename)
+            self.LoadRAW(filename)
         else:
             raise Exception("Unable to determine file type.")
 
@@ -47,7 +80,7 @@ class SStruct:
             else:
                 FileFormat = "RAW"
 
-        return format
+        return FileFormat
 
     def LoadFASTA(self, filename: str):
         self.names = list()
@@ -96,17 +129,47 @@ class SStruct:
                     raise Exception(
                         "More than one consensus base-pairing structure found.")
                 else:
-                    self.mapping = ConvertParensToMapping(FilterParens(i))
+                    self.mapping = self.ConvertParensToMapping(self.FilterParens(i))
                     self.sequences.pop(1)
                     self.names.pop(1)
                     consensus_found = True
                     continue
 
         if(consensus_found == False):
-            self.mapping = [UNKNOWN for i in range(len(self.sequences[0]))]
-
+            self.mapping = [SStruct.UNKNOWN]*len(self.sequences[0])
+        else:
+            self.has_struct=True
+        for i in range(self.num_data_sources):
+            self.unpaired_potentials.append([SStruct.UNKNOWN_POTENTIAL]*len(self.sequences[0]))
+        self.has_evidence=False
+        #self.which_evidence.resize(num_data_sources,false)
     def LoadRAW(self, filename: str):
-        pass
+        self.names = list()
+        self.sequences = list()
+        self.mapping = list()
+
+        self.names.append(filename)
+        self.sequences.append("@")
+
+        try:
+            data = open(filename).readlines()
+        except:
+            raise Exception("Unable to open input file: " + filename)
+        
+        for i in data:
+            for j in i:
+                if(j==" "):
+                    continue
+                self.sequences[-1] += j
+
+        if(len(self.sequences[0]) == 1):
+            raise Exception("Zero-length sequence read.")
+
+
+        self.mapping = [SStruct.UNKNOWN for i in range(len(self.sequences))]
+       
+
+
 
     def LoadBPSEQ(self, filename: str):
         self.names = list()
@@ -115,7 +178,7 @@ class SStruct:
 
         self.names.append(filename)
         self.sequences.append("@")
-        self.mapping.append(UNKNOWN)
+        self.mapping.append(SStruct.UNKNOWN)
 
         try:
             data = open(filename).readlines()
@@ -186,7 +249,7 @@ class SStruct:
         return sequence
 
     def ConvertParensToMapping(self, parens: str):
-        mapping = [UNKNOWN for i in range(len(parens))]
+        mapping = [SStruct.UNKNOWN for i in range(len(parens))]
         stack = list()
 
         assert parens[0] == "@", "Invalid parenthesized string."
@@ -220,7 +283,7 @@ class SStruct:
         parens = "@"
 
         for i in range(1, len(mapping)):
-            if (mapping[i] == UNKNOWN):
+            if (mapping[i] == SStruct.UNKNOWN):
                 parens += "?"
             elif (mapping[i] == UNPAIRED):
                 parens += "."
@@ -232,10 +295,10 @@ class SStruct:
                 raise Exception("Invalid structure.")
 
     def ValidateMapping(self, mapping: list):
-        if(len(mapping) == 0 or mapping[0] != UNKNOWN):
+        if(len(mapping) == 0 or mapping[0] != SStruct.UNKNOWN):
             raise Exception("Invalid mapping.")
         for i in range(1, len(mapping)):
-            if(mapping[i] == UNPAIRED or mapping[i] == UNKNOWN):
+            if(mapping[i] == UNPAIRED or mapping[i] == SStruct.UNKNOWN):
                 continue
             if(mapping[i] < 1 or mapping[i] >= len(mapping)):
                 raise Exception(
@@ -250,7 +313,7 @@ class SStruct:
     def ContainsPseudoknots(self):
         stack = list()
         for i in range(1, len(self.mapping)):
-            if(self.mapping[i] == UNPAIRED or self.mapping == UNKNOWN):
+            if(self.mapping[i] == UNPAIRED or self.mapping == SStruct.UNKNOWN):
                 continue
             if(self.mapping[i] > i):
                 stack.append(i)
@@ -274,7 +337,7 @@ class SStruct:
         assert len(self.sequences[seq]) == len(
             self.mapping), "Inconsistent lengths."
         for i in range(1, len(self.mapping)):
-            if(mapping[i] > i and not self.IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
+            if(self.mapping[i] > i and not self.IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
                 self.mapping[self.mapping[i]] = UNPAIRED
                 self.mapping[i] = UNPAIRED
 
@@ -328,7 +391,7 @@ class SStruct:
 
     def SetMapping(self, mapping):
         self.mapping = mapping
-        ValidateMapping(mapping)
+        self.ValidateMapping(mapping)
 
     def GetNames(self):
         pass
@@ -337,7 +400,8 @@ class SStruct:
         pass
 
     def GetMapping(self):
-        pass
+        return self.mapping
+        
 
     def GetUnpairedPotential(self, which: int):
         pass
@@ -346,13 +410,16 @@ class SStruct:
         pass
 
     def GetLength(self):
-        pass
+        return len(self.mapping)-1
 
     def GetNumSequences(self):
-        pass
+        return len(self.sequences)-1
 
     def HasStruct(self):
-        pass
+        return self.has_struct
 
     def HasEvidence(self):
-        pass
+        return self.has_evidence
+    
+    def HasEvidence(self, which_data: int):
+        return self.which_evidence[which_data]

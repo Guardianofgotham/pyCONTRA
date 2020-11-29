@@ -29,7 +29,10 @@ def getArgumentsObject():
     parseObject = argparse.ArgumentParser(
         description="Arguments passed to pyContra")
     parseObject.add_argument("--training_mode", type=str, default="",
-                             required=True, help="predict | supervised | em | em-sgd")
+                             required=False, help="supervised | em | em-sgd")
+
+    parseObject.add_argument("--predict", type=str, default="",
+                             required=False, help="prediction filename")
 
     parseObject.add_argument("--verbose", type=bool, default=False,
                              required=False, help="show detailed console output: bool")
@@ -113,6 +116,8 @@ def getArgumentsObject():
                              required=False, help="weight on data-only examples: float")
 
     args = parseObject.parse_args()
+    if args.predict!="":
+        fNames.append(args.predict)
     verfiyFileNames(args, fNames)
     return args, fNames
 

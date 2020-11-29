@@ -86,7 +86,7 @@ from pyCONTRA.SharedInfo import *
 from pyCONTRA.NonSharedInfo import *
 import time
 
-class DistributedComputationBase:
+class DistributedComputationBase(object):
     def __init__(self, toggle_verbose: bool):
         self.toggle_verbose = toggle_verbose
         self.processing_time = 0
@@ -94,8 +94,8 @@ class DistributedComputationBase:
         self.id = 0
         self.num_procs = 1
 
-    def DoComputation(self, result, shared_data, nonshared_data):
-        pass
+    # def DoComputation(self, result, shared_data, nonshared_data):
+    #     pass
     
     ## start and stop compute nodes
     def RunAsComputeNode(self):
@@ -106,16 +106,18 @@ class DistributedComputationBase:
 
 
     ## perform distributed computation (to be called by master node)
-    def DistributeComputation(self, result: list, shared_data: SharedInfo, nonshared_data: NonSharedInfo):
+    def DistributeComputation(self, result: list, shared_data: SharedInfo, nonshared_data: list):
+        print(type(self))
         if self.id!=0:
             raise Exception("Routine should only be called by master process.")
         if (len(nonshared_data)<=0):
             raise Exception("Must submit at least one work description for processing.")
-        starting_time = time()
+        # starting_time = time()
         result.clear()
         partial_result = list()
         for j in range(0, len(nonshared_data)):
-            self.DoComputation(partial_result, shared_data, nonshared_data)
+            # print(shared_data.command)
+            self.DoComputation(partial_result, shared_data, nonshared_data[j])
             if(len(result)==0):
                 result = [0]*len(partial_result)
             elif len(result)!=len(partial_result):
@@ -127,7 +129,8 @@ class DistributedComputationBase:
     def IsComputeNode(self):
         pass
     def IsMasterNode(self):
-        pass
+        return self.id==0
+        
     def GetNumNodes(self):
         pass
     def GetNodeID(self):
