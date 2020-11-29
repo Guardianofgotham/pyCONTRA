@@ -144,7 +144,29 @@ class SStruct:
         self.has_evidence=False
         #self.which_evidence.resize(num_data_sources,false)
     def LoadRAW(self, filename: str):
-        raise Exception("Not implemented")
+        self.names = list()
+        self.sequences = list()
+        self.mapping = list()
+
+        self.names.append(filename)
+        self.sequences.append("@")
+
+        try:
+            data = open(filename).readlines()
+        except:
+            raise Exception("Unable to open input file: " + filename)
+        
+        for i in data:
+            for j in i:
+                if(j==" "):
+                    continue
+                self.sequences[-1] += j
+
+        if(len(self.sequences[0]) == 1):
+            raise Exception("Zero-length sequence read.")
+
+
+        self.mapping = [SStruct.UNKNOWN for i in range(len(self.sequences))]
 
     def LoadBPSEQ(self, filename: str):
         self.names = list()
