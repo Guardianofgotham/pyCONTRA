@@ -83,128 +83,155 @@ class InferenceEngine:
         log_score_evidence = None
         cache_score_single = None
         cache_score_helix_sums = None
-        pass
 
     def FillScores(self):
-        pass
+        raise Exception("Not implemented")
 
     def FillCounts(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeRowOffset(self, i: int, N: int) -> int:
-        pass
+        raise Exception("Not implemented")
 
     def IsComplementary(self, i: int, j: int) -> bool:
-        pass
+        raise Exception("Not implemented")
 
     def ScoreJunctionA(self, i: int,  j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreJunctionB(self, i: int, j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreBasePair(self, i: int,  j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreHairpin(self, i: int, j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreHelix(self, i: int,  j: int, m: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreSingleNucleotides(self, i: int,  j: int, p: int, q: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreSingle(self, i: int, j: int, p: int, q: int):
-        pass
+        raise Exception("Not implemented")
 
     def CountJunctionA(self, i: int,  j: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def CountJunctionB(self, i: int, j: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def CountBasePair(self, i: int, j: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def CountHairpin(self, i: int, j: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def CountHelix(self, i: int,  j: int,  m: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def CountSingleNucleotides(self, i: int, j: int, p: int,  q: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def CountSingle(self, i: int,  j: int, p: int, q: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def ScorePairedUnpositionEvidenceRaw(self, which_data: int, i: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreUnpairedPositionEvidenceRaw(self, which_data: int, i: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreUnpairedPositionEvidence(self, i: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScorePairedPositionEvidence(self, i: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreUnpairedEvidence(self, i: int, j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreBasePairEvidence(self, i: int,  j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreHelixEvidence(self, i: int, j: int,  m: int):
-        pass
+        raise Exception("Not implemented")
 
     def CountBasePairEvidence(self, i: int, j: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def CountHelixEvidence(self, i: int, j: int, m: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreHairpinEvidence(self, i: int, j: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreSingleNucleotidesEvidence(self, i: int,  j: int,  p: int,  q: int):
-        pass
+        raise Exception("Not implemented")
 
     def ScoreSingleEvidence(self, i: int, j: int, p: int, q: int):
-        pass
+        raise Exception("Not implemented")
 
     def CountHairpinEvidence(self, i: int, j: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def CountSingleNucleotidesEvidence(self, i: int,  j: int,  p: int,  q: int,  value):
-        pass
+        raise Exception("Not implemented")
 
     def CountSingleEvidence(self, i: int, j: int, p: int,  q: int, value):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeProfileScore(self, profile_score, pos, dimensions, table):
-        pass
+        raise Exception("Not implemented")
 
     def ConvertProfileCount(self, profile_score,  pos,  dimensions: int, table):
-        pass
+        raise Exception("Not implemented")
 
     # register params with the parameter manager
     def RegisterParameters(self, parameter_manager):
-        pass
+        buffer=""
+        buffer2=""
+        self.cache_initialized= False
+
+        self.parameter_manager = parameter_manager
+        #parameter_manager.ClearParameters()
+        #parameter_manager.AddParameterGroup("all_params")
+        for i in range(M+1):
+            for j in range(M+1):
+                if (i == M or j == M):
+                    self.score_base_pair[i][j] = (0, 0)
+                else:
+                    #sprintf(buffer, "base_pair_%c%c", alphabet[i], alphabet[j]);
+                    #sprintf(buffer2, "base_pair_%c%c", alphabet[j], alphabet[i]);
+                    buffer=f"base_pair_{alphabet[i]}{alphabet[j]}"
+                    buffer2=f"base_pair_{alphabet[j]}{alphabet[i]}"
+                    if ((buffer<buffer2)):
+                        parameter_manager.AddParameterMapping(buffer, self.score_base_pair[i][j])
+                    else:
+                        parameter_manager.AddParameterMapping(buffer2, self.score_base_pair[i][j])
+                
+        ## Complete if-endif statements
+
+        #raise Exception("Not implemented")
 
     # load sequence
     def LoadSequence(self, sstruct):
-        pass
+        self.cache_initialized= False
+        self.L=sstruct.GetLength();
+        self.SIZE=(self.L+1)*(self.L+2) / 2
+
+
+        raise Exception("Not implemented")
 
     # load parameter values
     def LoadValues(self, values):
         # load loss function
-        pass
+        raise Exception("Not implemented")
 
     def UseLoss(self, true_mapping,  example_loss):
-        pass
+        raise Exception("Not implemented")
 
     # use Constraints
     def UseConstraints(self, true_mapping):
@@ -229,33 +256,33 @@ class InferenceEngine:
     # Viterbi inference
 
     def ComputeViterbi(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetViterbiScore(self):
-        pass
+        raise Exception("Not implemented")
 
     def PredictPairingsViterbi(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeViterbiFeatureCounts(self):
-        pass
+        raise Exception("Not implemented")
 
     # MEA inference
 
     def ComputeInside(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeOutside(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeFeatureCountExpectations(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputePosterior(self):
-        pass
+        raise Exception("Not implemented")
 
     def PredictPairingsPosterior(self,   gamma: int):
         if(not(gamma>0)):
@@ -275,7 +302,7 @@ class InferenceEngine:
             unpaired_posterior[i] /= 2 * gamma
         score=[-1]*self.SIZE
         traceback=[-1]*self.SIZE
-
+        print(self.SIZE)
         #DP
 
         for i in range(self.L,-1,-1):
@@ -316,7 +343,7 @@ class InferenceEngine:
                 print("should not get here ")
                 
             elif(traceback[self.offset[i]+j]==0):
-                pass
+                raise Exception("Not implemented")
             elif(traceback[self.offset[i]+j]==1):
                 traceback_queue.put((i+1,j))
                 
@@ -337,57 +364,57 @@ class InferenceEngine:
         
 
     def PredictPairingsPosteriorCentroid(self, gamma):
-        pass
+        raise Exception("Not implemented")
 
     def GetPosterior(self,   posterior_cutoff):
-        pass
+        raise Exception("Not implemented")
 
     # EM inference
 
     def ComputeInsideESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeOutsideESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeFeatureCountExpectationsESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputePosteriorESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficientESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeESS(self):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLESum(self, ev_cpd_id,  ignorePairing,  usePosterior,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLESS(self, ev_cpd_id,  ignoreZeros,  useMLE,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLEESS(self, ev_cpd_id,  ignoreZeros,  useMLE,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def GetNumExamplesSeqPairing(self, ev_cpd_id,  ignoreZeros,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def GetNumExamplesSeq(self, ev_cpd_id,  ignoreZeros,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def AreZerosInSeqPairing(self,  id_base,  id_pairings,  which_base):
-        pass
+        raise Exception("Not implemented")
 
     def AreZerosInSeq(self,  id_base,  which_base):
-        pass
+        raise Exception("Not implemented")
 
     def LogGammaProb(self,  data,  which_data,  isUnpaired,  seq):
-        pass
+        raise Exception("Not implemented")
 
     def UpdateEvidenceStructures(self,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def UpdateEvidenceStructures(self):
-        pass
+        raise Exception("Not implemented")

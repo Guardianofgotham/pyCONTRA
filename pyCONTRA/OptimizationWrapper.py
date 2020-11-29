@@ -3,50 +3,50 @@ from pyCONTRA.ComputationWrapper import *
 
 class OptimizationWrapper:
     def __init__(self):
-        pass
+        raise Exception("Not implemented")
 
     def OptimizationWrapper(self, computation_wrapper):
-        pass
+        raise Exception("Not implemented")
 
     def Train(self,  units,  w,  w0,   C):
-        pass
+        raise Exception("Not implemented")
 
     def TrainEM(self,  units,  w,   C,   train_max_iter):
-        pass
+        raise Exception("Not implemented")
 
     def TrainSGD(self,  units,  w,   C):
-        pass
+        raise Exception("Not implemented")
 
     def LearnHyperparameters(self, units,  values):
-        pass
+        raise Exception("Not implemented")
 
     def LearnHyperparametersEM(self, units,  values,   train_max_iter):
-        pass
+        raise Exception("Not implemented")
 
     def Indent(self,):
-        pass
+        raise Exception("Not implemented")
 
     def Unindent(self,):
-        pass
+        raise Exception("Not implemented")
 
     def PrMessage(self, s):
-        pass
+        raise Exception("Not implemented")
 
     # getters
     def GetOptions(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetDescriptions(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetInferenceEngine(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetParameterManager(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetComputationEngine(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetComputationWrapper(self):
-        pass
+        raise Exception("Not implemented")

@@ -48,10 +48,10 @@ class ComputationWrapper(object):
         return ret
 
     def ComputeSolutionNormBound(self,  units,   C,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGradientNormBound(self,  units,   C,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     def Predict(self,  units: list,   w: list,  gamma: float,  log_base: float):
         if not self.computation_engine.IsMasterNode():
@@ -73,45 +73,45 @@ class ComputationWrapper(object):
         self.computation_engine.DistributeComputation(ret, self.shared_info, self.nonshared_info)
 
     def ComputeLoss(self,  units,   w,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeFunction(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  hyperparam_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGradient(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  hyperparam_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeEMFunction(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeEMGradient(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeFunctionSE(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  hyperparam_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGradientSE(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  hyperparam_base):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLEFunction(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  evidence_cpd_id1,  evidence_cpd_id2,  evidence_cpd_id3,  evidence_data_scale,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLEGradient(self,  units,   w,  toggle_use_nonsmooth,  toggle_use_loss,  log_base,  evidence_cpd_id1,  evidence_cpd_id2,  evidence_cpd_id3,  evidence_data_scale,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def FindZerosInData(self,  units,  evidence_cpd_id1,  evidence_cpd_id2,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeGammaMLEScalingFactor(self,  units,   w,  evidence_cpd_id1,  evidence_cpd_id2,  which_data):
-        pass
+        raise Exception("Not implemented")
 
     def ComputeHessianVectorProduct(self,  units,   w,   v,  toggle_use_loss,  log_base):
-        pass
+        raise Exception("Not implemented")
 
     # for debugging
 
     def SanityCheckGradient(self,  units,   w):
-        pass
+        raise Exception("Not implemented")
     # getters
     def GetOptions(self):
         return self.computation_engine.GetOptions()

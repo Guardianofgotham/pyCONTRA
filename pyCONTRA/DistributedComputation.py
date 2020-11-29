@@ -38,7 +38,7 @@
 # other processors by a direct memcpy().  In the following, we
 # will assume that the name of this class is SharedData.
 ##
-# (2) Create a class for storing nonshared data which is to be passed
+# (2) Create a class for storing nonshared data which is to be raise Exception("Not implemented")ed
 # to each processor individually.  This class should not contain
 # any pointers, as the data in this class will be distributed to
 # other processors by a direct memcpy().  In the following, we
@@ -95,14 +95,14 @@ class DistributedComputationBase(object):
         self.num_procs = 1
 
     # def DoComputation(self, result, shared_data, nonshared_data):
-    #     pass
+    #     raise Exception("Not implemented")
     
     ## start and stop compute nodes
     def RunAsComputeNode(self):
-        pass
+        raise Exception("Not implemented")
 
     def StopComputeNodes(self):
-        pass
+        raise Exception("Not implemented")
 
 
     ## perform distributed computation (to be called by master node)
@@ -127,17 +127,17 @@ class DistributedComputationBase(object):
 
     ## some simple routines for dealing with node IDs
     def IsComputeNode(self):
-        pass
+        raise Exception("Not implemented")
     def IsMasterNode(self):
         return self.id==0
         
     def GetNumNodes(self):
-        pass
+        raise Exception("Not implemented")
     def GetNodeID(self):
-        pass
+        raise Exception("Not implemented")
 
     ## query statistics regarding the efficiency of distributed computation
     def GetEfficiency(self):
-        pass
+        raise Exception("Not implemented")
     def ResetEfficiency(self):
-        pass
+        raise Exception("Not implemented")
