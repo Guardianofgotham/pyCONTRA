@@ -13,11 +13,25 @@ class LBFGS:
 
     def Minimise(self,x0: list):
         n = len(x0)
-        f = list()
-        gamma = list()
-        x = [list() for i in range(2)]
-        x = [list() for i in range(2)]
-        x = [list() for i in range(self.M)]
-        x = [list() for i in range(self.M)]
+        f = [0.0, 0.0]
+        gamma = [0.0, 0.0]
+        x = [[0.0 for j in range(n)] for i in range(2)]
+        g = [[0.0 for j in range(n)] for i in range(2)]
+        s = [[0.0 for j in range(n)] for i in range(self.M)]
+        y = [[0.0 for j in range(n)] for i in range(self.M)]
+        rho = list()
+        gradient_ratio = None
+        f0 = None
+
+        x[0] = x0
+        f[0] = f0 = ComputeFunction(x[0])
+
+        if(f[0] > 1e20):
+            Report
+            return f[0]
+        
+        ComputeGradient(g[0], x[0])
+        gradient_ratio = Norm(g[0])/max(1,Norm(x[0]))
+
 
 
