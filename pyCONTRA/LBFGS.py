@@ -17,7 +17,7 @@ class LBFGS:
         gamma = list()
         x = [list() for i in range(2)]
         x = [list() for i in range(2)]
-        x = [list() for i in range(M)]
-        x = [list() for i in range(M)]
+        x = [list() for i in range(self.M)]
+        x = [list() for i in range(self.M)]
 
 
