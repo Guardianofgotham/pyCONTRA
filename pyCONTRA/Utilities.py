@@ -7,3 +7,4 @@ def DotProduct(x:list, t:list):
     return ret
 def Norm(x: list):
     return math.sqrt(DotProduct(x, x))
+
