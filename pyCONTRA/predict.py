@@ -14,9 +14,9 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
     computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
     computation_wrapper = ComputationWrapper(computation_engine)
 
-    if(computation_engine.IsComputeNode()):
-        computation_engine.RunAsComputeNode()
-        return
+    # if(computation_engine.IsComputeNode()):
+    #     computation_engine.RunAsComputeNode()
+    #     return
 
     output_parens_destination = args.output_parens_destination
     output_bpseq_destination = args.output_bpseq_destination
@@ -34,31 +34,31 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
 
     if args.gamma < 0:
         if output_parens_destination != "":
-            pass
+            raise Exception("Not implemented")
         if output_bpseq_destination != "":
-            pass
+            raise Exception("Not implemented")
         if output_posteriors_destination != "":
-            pass
+            raise Exception("Not implemented")
 
         for k in range(-5, 11):
             gamma = 2.0**float(k)
 
             if(len(description) > 1):
                 if output_parens_destination!="":
-                    pass
+                    raise Exception("Not implemented")
                 if output_bpseq_destination!="":
-                    pass
+                    raise Exception("Not implemented")
                 if output_posteriors_destination!="":
-                    pass
+                    raise Exception("Not implemented")
             computation_wrapper.Predict(computation_engine, w, gamma, args.log_base)
     else:
         if len(description)>1:
             if output_parens_destination!="":
-                pass
+                raise Exception("Not implemented")
             if output_bpseq_destination!="":
-                pass
+                raise Exception("Not implemented")
             if output_posteriors_destination!="":
-                pass
+                raise Exception("Not implemented")
         computation_wrapper.Predict(computation_wrapper.GetAllUnits(), w, args.gamma, args.log_base) 
     print("Inside Prediction")
     computation_engine.StopComputeNodes()

@@ -38,22 +38,22 @@ class ParameterManager:
         self.logical_to_physical[self.logical_name_to_index[logical_name]].append(physical_ptr)
 
     def ReadFromFile(self, filename: str, values: list):
-        pass
+        raise Exception("Not implemented")
     
     def WriteToFile(self, filenam: str, values: list):
-        pass
+        raise Exception("Not implemented")
 
     def ExpandParameterGroupValues(self, values: list) -> list:
-        pass
+        raise Exception("Not implemented")
     
     def GetPhysicalParameters(self, logical_index: int) -> list:
-        pass
+        raise Exception("Not implemented")
 
     def GetLogicalIndex(self, physical_ptr: tuple) ->int:
-        pass
+        raise Exception("Not implemented")
 
     def GetNumLogicalParameters(self):
         return len(self.logical_to_physical)
 
     def GetNumParameterGroups(self):
-        pass
+        raise Exception("Not implemented")

@@ -167,9 +167,6 @@ class SStruct:
 
 
         self.mapping = [SStruct.UNKNOWN for i in range(len(self.sequences))]
-       
-
-
 
     def LoadBPSEQ(self, filename: str):
         self.names = list()
@@ -220,10 +217,10 @@ class SStruct:
             self.mapping.append(tokens[2])
 
     def LoadBPP2SEQ(self, filename: str):
-        pass
+        raise Exception("Not implemented")
 
     def LoadBPP2TSEQ(self, filename: str):
-        pass
+        raise Exception("Not implemented")
 
     def FilterSequence(self, sequence: str):
         if(sequence[0] != "@"):
@@ -387,27 +384,27 @@ class SStruct:
                     pairwise_pid = double(identities) / den
 
     def ComputePositionBasedSequenceWeights(self, ):
-        pass
+        raise Exception("Not implemented")
 
     def SetMapping(self, mapping):
         self.mapping = mapping
         self.ValidateMapping(mapping)
 
     def GetNames(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetSequence(self):
-        pass
+        raise Exception("Not implemented")
 
     def GetMapping(self):
         return self.mapping
         
 
     def GetUnpairedPotential(self, which: int):
-        pass
+        raise Exception("Not implemented")
 
     def GetPairedPotentials(self, which: int):
-        pass
+        raise Exception("Not implemented")
 
     def GetLength(self):
         return len(self.mapping)-1

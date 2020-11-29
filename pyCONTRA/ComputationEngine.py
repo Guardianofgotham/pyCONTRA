@@ -20,7 +20,7 @@ class ComputationEngine(DistributedComputationBase):
         self.parameter_manager = parameter_manager
 
     def DistributedComputation(self):
-        pass
+        raise Exception("Not implemented")
 
     # routine for performing an individual work unit
     def DoComputation(self, result: list, shared: SharedInfo, nonshared: NonSharedInfo):
@@ -206,7 +206,7 @@ class ComputationEngine(DistributedComputationBase):
                 f"Unexpected bad parse for file: {self.descriptions[nonshared.index].input_filename}")
             result = [0]*len(result)
         if NONCONVEX_MULTIPLIER != 0:
-            pass
+            raise Exception("Not implemented")
 
         if result[-1] < 0:
             if result[-1] < 1e-6:
@@ -467,13 +467,13 @@ class ComputationEngine(DistributedComputationBase):
         if self.options.output_parens_destination == "":
             filename = MakeOutputFilename(self.description[nonshared.index].input_filename,
                                           self.options.output_parens_destination, self.options.gamma < 0, shared.gamma)
-            pass
+            raise Exception("Not implemented")
         if self.options.output_bpseq_destination != "":
             filename = MakeOutputFilename(self.descriptions[nonshared.index].input_filename,
                                           self.options.output_bpseq_destination, self.options.gamma < 0, shared.gamma)
-            pass
+            raise Exception("Not implemented")
         if self.options.output_posteriors_destination != "":
-            pass
+            raise Exception("Not implemented")
         return
 
     def CheckZerosInData(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo):
@@ -529,7 +529,7 @@ class ComputationEngine(DistributedComputationBase):
 
 
     def ComputeFunctionAndGradientSE(self, result,   shared,   nonshared, need_gradient):
-        pass
+        raise Exception("Not implemented")
     
     def GetOptions(self):
         return self.options
