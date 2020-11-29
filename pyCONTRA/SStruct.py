@@ -216,11 +216,11 @@ class SStruct:
             self.sequences[-1].append(ch)
             self.mapping.append(tokens[2])
 
-    def LoadBPP2SEQ(self, filename: str):
-        raise Exception("Not implemented")
+    # def LoadBPP2SEQ(self, filename: str):
+    #     raise Exception("Not implemented")
 
-    def LoadBPP2TSEQ(self, filename: str):
-        raise Exception("Not implemented")
+    # def LoadBPP2TSEQ(self, filename: str):
+    #     raise Exception("Not implemented")
 
     def FilterSequence(self, sequence: str):
         if(sequence[0] != "@"):
@@ -383,22 +383,38 @@ class SStruct:
                 else:
                     pairwise_pid = double(identities) / den
 
-    def ComputePositionBasedSequenceWeights(self, ):
-        raise Exception("Not implemented")
+    def ComputePositionBasedSequenceWeights(self):
+        weights = [0 for i in range(len(self.sequences))]
+        counts = [0 for i in range(256)]
+
+        for i in range(1, len(self.sequences[0])):
+            diversity = 0
+            counts = [0 for i in range(len(counts))]
+
+            for j in range(0, len(self.sequences)):
+                if(counts[self.sequences[j][i]] == 0):
+                    diversity+=1
+                counts[self.sequences[j][i]] += 1
+            
+            for j in range(len(self.sequences)):
+                weights += 1/(diversity * counts[self.sequences[j][i]])
+        
+        weights /= sum(weights)
+        return weights
+        
 
     def SetMapping(self, mapping):
         self.mapping = mapping
         self.ValidateMapping(mapping)
 
     def GetNames(self):
-        raise Exception("Not implemented")
+        return self.names
 
-    def GetSequence(self):
-        raise Exception("Not implemented")
+    def GetSequences(self):
+        return self.sequences
 
     def GetMapping(self):
-        return self.mapping
-        
+        return self.mapping        
 
     def GetUnpairedPotential(self, which: int):
         raise Exception("Not implemented")
