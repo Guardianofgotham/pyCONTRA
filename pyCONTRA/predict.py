@@ -9,7 +9,7 @@ from pyCONTRA.Defaults import *
 
 def RunPredictionMode(args: argparse.Namespace, description: list):
     parameter_manager = ParameterManager()
-    inference_engine = InferenceEngine()
+    inference_engine = InferenceEngine(args.allow_noncomplementary, args.num_data_sources)
     inference_engine.RegisterParameters(parameter_manager)
     computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
     computation_wrapper = ComputationWrapper(computation_engine)
@@ -30,7 +30,7 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
             w = GetDefaultNoncomplementaryValues()
         else:
             w = GetDefaultComplementaryValues()
-    
+    print(f"len(w): {len(w)}")
 
     if args.gamma < 0:
         if output_parens_destination != "":

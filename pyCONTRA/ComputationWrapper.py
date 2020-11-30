@@ -64,6 +64,7 @@ class ComputationWrapper(object):
         self.shared_info.command = ProcessingType.PREDICT
         for i in range(0, len(w)):
             self.shared_info.w[i] = w[i]
+        self.shared_info.w = self.shared_info.w[:len(w)]
         self.shared_info.gamma=gamma
         self.shared_info.log_base=log_base
         self.nonshared_info.clear()

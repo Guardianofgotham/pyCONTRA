@@ -1,21 +1,24 @@
 from __future__ import annotations
 from pyCONTRA.config import *
 from pyCONTRA.SStruct import *
+from pyCONTRA.ParameterManager import *
+import array as arr
 from queue import Queue
 
 
 class InferenceEngine:
     DATA_LOW_THRESH = 1e-7
 
-    def __init__(self):
-        self.allow_noncomplementary = None
-        self.char_mapping = "0"*256
+    def __init__(self, allow_noncomplementary: bool, num_data_sources: int):
+        self.allow_noncomplementary = allow_noncomplementary
+
+        self.char_mapping = [0]*256
         self.is_complementary = []
         for i in range(M+1):
             self.is_complementary.append([0]*(M+1))
-        self.cache_initialized = None
+        self.cache_initialized = False
         self.parameter_manager = None
-        self.num_data_sources = None
+        self.num_data_sources = num_data_sources
         self.L = 0
         self.SIZE = 0
 
@@ -51,38 +54,57 @@ class InferenceEngine:
             for j in range(M+1):
                 self.score_base_pair[-1].append((0, 0))
 
-        score_terminal_mismatch = list()
+        self.score_terminal_mismatch = list()
+        self.score_internal_explicit = list()
+        self.score_internal_1x1_nucleotides = list()
+        self.score_helix_stacking = list()
+        self.score_helix_closing = list()
+        self.score_dangle_left = list()
+        self.score_dangle_right = list()
         for i in range(M+1):
-            score_terminal_mismatch.append([])
+            self.score_terminal_mismatch.append([])
+            self.score_internal_explicit.append([])
+            self.score_internal_1x1_nucleotides.append([])
+            self.score_helix_stacking.append([])
+            self.score_helix_closing.append([])
+            self.score_dangle_left.append([])
+            self.score_dangle_right.append([])
             for j in range(M+1):
-                score_terminal_mismatch[-1].append([])
+                self.score_terminal_mismatch[-1].append([])
+                self.score_internal_explicit[-1].append([])
+                self.score_internal_1x1_nucleotides[-1].append(None)
+                self.score_helix_stacking[-1].append([])
+                self.score_helix_closing[-1].append([])
+                self.score_dangle_left[-1].append([])
+                self.score_dangle_right[-1].append([])
                 for k in range(M+1):
-                    score_terminal_mismatch[-1][-1].append([])
+                    self.score_terminal_mismatch[-1][-1].append([])
+                    # self.score_terminal_mismatch[-1][-1].append([])
+                    self.score_helix_stacking[-1][-1].append([])
+                    self.score_dangle_left[-1][-1].append([])
+                    self.score_dangle_right[-1][-1].append([])
                     for l in range(M+1):
-                        score_terminal_mismatch[-1][-1][-1].append((0, 0))
+                        self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
+                        # self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
+                        self.score_helix_stacking[-1][-1][-1].append((0, 0))
 
         self.cache_score_hairpin_length = [0]*(D_MAX_HAIRPIN_LENGTH+1)
         self.score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
-        self.score_internal_explicit = None
-        self.score_bulge_length_at_least = None
-        self.score_internal_length_at_least = None
-        self.score_internal_symmetric_length_at_least = None
-        self.score_internal_asymmetry_at_least = None
-        self.score_bulge_0x1_nucleotides = None
-        self.score_bulge_1x0_nucleotides = None
-        self.score_internal_1x1_nucleotides = None
-        self.score_helix_stacking = None
-        self.score_helix_closing = None
+        self.score_bulge_length_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_internal_length_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_internal_symmetric_length_at_least = [
+            0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_bulge_0x1_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_bulge_1x0_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_internal_asymmetry_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
         self.score_multi_base = None
         self.score_multi_unpaired = None
         self.score_multi_paired = None
-        self.score_dangle_left = None
-        self.score_dangle_right = None
         self.score_external_unpaired = None
         self.score_external_paired = None
         self.log_score_evidence = None
         self.cache_score_single = None
-        self.cache_score_helix_sums =[]
+        self.cache_score_helix_sums = []
 
     def FillScores(self):
         raise Exception("Not implemented")
@@ -91,10 +113,14 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def ComputeRowOffset(self, i: int, N: int) -> int:
-        raise Exception("Not implemented")
+        if(i < 0 and i > N):
+            raise Exception("Index out-of-bonuds")
+        return i*(N+N-i-1)//2
+        # raise Exception("Not implemented")
 
     def IsComplementary(self, i: int, j: int) -> bool:
-        raise Exception("Not implemented")
+        return self.is_complementary[self.s[i]][self.s[j]]
+        # raise Exception("Not implemented")
 
     def ScoreJunctionA(self, i: int,  j: int):
         raise Exception("Not implemented")
@@ -190,62 +216,243 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     # register params with the parameter manager
-    def RegisterParameters(self, parameter_manager):
-        buffer=""
-        buffer2=""
-        self.cache_initialized= False
-
+    def RegisterParameters(self, parameter_manager: ParameterManager):
+        buffer = ""
+        buffer2 = ""
+        self.cache_initialized = False
         self.parameter_manager = parameter_manager
-        #parameter_manager.ClearParameters()
-        #parameter_manager.AddParameterGroup("all_params")
+        parameter_manager.ClearParameters()
+        parameter_manager.AddParameterGroup("all_params")
         for i in range(M+1):
             for j in range(M+1):
                 if (i == M or j == M):
                     self.score_base_pair[i][j] = (0, 0)
                 else:
-                    #sprintf(buffer, "base_pair_%c%c", alphabet[i], alphabet[j]);
-                    #sprintf(buffer2, "base_pair_%c%c", alphabet[j], alphabet[i]);
-                    buffer=f"base_pair_{alphabet[i]}{alphabet[j]}"
-                    buffer2=f"base_pair_{alphabet[j]}{alphabet[i]}"
-                    if ((buffer<buffer2)):
-                        parameter_manager.AddParameterMapping(buffer, self.score_base_pair[i][j])
+                    buffer = f"base_pair_{alphabet[i]}{alphabet[j]}"
+                    buffer2 = f"base_pair_{alphabet[j]}{alphabet[i]}"
+                    if ((buffer < buffer2)):
+                        parameter_manager.AddParameterMapping(
+                            buffer, self.score_base_pair[i][j])
                     else:
-                        parameter_manager.AddParameterMapping(buffer2, self.score_base_pair[i][j])
-                
-        ## Complete if-endif statements
+                        parameter_manager.AddParameterMapping(
+                            buffer2, self.score_base_pair[i][j])
 
-        #raise Exception("Not implemented")
+        # Complete if-endif statements
+        for i1 in range(0, M+1):
+            for j1 in range(0, M+1):
+                for i2 in range(0, M+1):
+                    for j2 in range(0, M+1):
+                        if (i1 == M or j1 == M or i2 == M or j2 == M):
+                            self.score_terminal_mismatch[i1][j1][i2][j2] = (0, 0)
+                        else:
+                            buffer = f"terminal_mismatch_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}{alphabet[j2]}"
+                            parameter_manager.AddParameterMapping(buffer, self.score_terminal_mismatch[i1][j1][i2][j2])
+        
+        for i in range(0, D_MAX_HAIRPIN_LENGTH+1):
+            buffer = f"hairpin_length_at_least_{i}"
+            parameter_manager.AddParameterMapping(
+                buffer, self.score_hairpin_length_at_least[i])
+
+        for i in range(0, D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
+            for j in range(0, D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
+                if i == 0 or j == 0:
+                    self.score_internal_explicit[i][j] = (0, 0)
+                else:
+                    buffer = f"internal_explicit_{min(i, j)}_{max(i, j)}"
+                    parameter_manager.AddParameterMapping(
+                        buffer, self.score_internal_explicit[i][j])
+
+        for i in range(0, D_MAX_BULGE_LENGTH+1):
+            if i == 0:
+                self.score_bulge_length_at_least[i] = (0, 0)
+            else:
+                buffer = f"bulge_length_at_least_{i}"
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_bulge_length_at_least[i])
+        
+        for i in range(0, D_MAX_INTERNAL_LENGTH+1):
+            if (i < 2):
+                self.score_internal_length_at_least[i] = (0, 0)
+            else:
+                buffer = f"internal_length_at_least_{i}"
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_internal_length_at_least[i])
+        
+        for i in range(0,  D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
+            if (i == 0):
+                self.score_internal_symmetric_length_at_least[i] = (0, 0)
+            else:
+                buffer = f"internal_symmetric_length_at_least_{i}"
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_internal_symmetric_length_at_least[i])
+        
+        for i in range(0, D_MAX_INTERNAL_ASYMMETRY+1):
+            if (i == 0):
+                self.score_internal_asymmetry_at_least[i] = (0, 0)
+            else:
+                buffer = f"internal_asymmetry_at_least_{i}"
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_internal_asymmetry_at_least[i])
+        
+        for i1 in range(0,  M+1):
+            if (i1 == M):
+                self.score_bulge_0x1_nucleotides[i1] = (0, 0)
+                self.score_bulge_1x0_nucleotides[i1] = (0, 0)
+            else:
+                buffer = f"bulge_0x1_nucleotides_{alphabet[i1]}"
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_bulge_0x1_nucleotides[i1])
+                parameter_manager.AddParameterMapping(
+                    buffer, self.score_bulge_1x0_nucleotides[i1])
+        
+        for i1 in range(0, M+1):
+            for i2 in range(0, M+1):
+                if (i1 == M or i2 == M):
+                    self.score_internal_1x1_nucleotides[i1][i2] = (0, 0)
+                else:
+                    buffer = f"internal_1x1_nucleotides_{alphabet[i1]}{alphabet[i2]}"
+                    buffer2 = f"internal_1x1_nucleotides_{alphabet[i2]}{alphabet[i1]}"
+                if (buffer < buffer2):
+                    parameter_manager.AddParameterMapping(
+                        buffer, self.score_internal_1x1_nucleotides[i1][i2])
+                else:
+                    parameter_manager.AddParameterMapping(
+                        buffer2, self.score_internal_1x1_nucleotides[i1][i2])
+        
+        for i1 in range(0, M+1):
+            for j1 in range(0, M+1):
+                for i2 in range(0, M+1):
+                    for j2 in range(0, M+1):
+                        if (i1 == M or j1 == M or i2 == M or j2 == M):
+                            self.score_helix_stacking[i1][j1][i2][j2] = (0, 0)
+                        else:
+                            buffer = f"helix_stacking_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}{alphabet[j2]}"
+                            buffer2 = f"helix_stacking_{alphabet[j2]}{alphabet[i2]}{alphabet[j1]}{alphabet[i1]}"
+                        if (buffer < buffer2):
+                            parameter_manager.AddParameterMapping(
+                                buffer, self.score_helix_stacking[i1][j1][i2][j2])
+                        else:
+                            parameter_manager.AddParameterMapping(
+                                buffer2, self.score_helix_stacking[i1][j1][i2][j2])
+        
+        print(f"PMANAGER: {parameter_manager.GetNumLogicalParameters()}")
+        for i in range(0, M+1):
+            for j in range(0, M+1):
+                if (i == M or j == M):
+                    self.score_helix_closing[i][j] = (0, 0)
+                else:
+                    buffer = f"helix_closing_{alphabet[i]}{alphabet[j]}"
+                    parameter_manager.AddParameterMapping(
+                        buffer, self.score_helix_closing[i][j])
+        
+        parameter_manager.AddParameterMapping(
+            "multi_base", self.score_multi_base)
+        parameter_manager.AddParameterMapping(
+            "multi_unpaired", self.score_multi_unpaired)
+        parameter_manager.AddParameterMapping(
+            "multi_paired", self.score_multi_paired)
+        
+        for i1 in range(0, M+1):
+            for j1 in range(0, M+1):
+                for i2 in range(0, M+1):
+                    if (i1 == M or j1 == M or i2 == M):
+                        self.score_dangle_left[i1][j1][i2] = (0, 0)
+                    else:
+                        buffer = f"dangle_left_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}"
+                        parameter_manager.AddParameterMapping(
+                            buffer, self.score_dangle_left[i1][j1][i2])
+
+        
+        for i1 in range(0, M+1):
+            for j1 in range(0, M+1):
+                for j2 in range(0, M+1):
+                    if (i1 == M or j1 == M or j2 == M):
+                        self.score_dangle_right[i1][j1][j2] = (0, 0)
+                    else:
+                        buffer = f"dangle_right_{alphabet[i1]}{alphabet[j1]}{ alphabet[j2]}"
+                        parameter_manager.AddParameterMapping(
+                            buffer, self.score_dangle_right[i1][j1][j2])
+        parameter_manager.AddParameterMapping(
+            "external_unpaired", self.score_external_unpaired)
+        parameter_manager.AddParameterMapping(
+            "external_paired", self.score_external_paired)
+        parameter_manager.AddParameterGroup("evidence_cpds");
+        for num_data_sources_current in range(0, self.num_data_sources):
+            for i0 in range(0, 2):
+                for i1 in range(0, M):
+                    for i2 in range(0, 2):
+                        if (i0 == 0):
+                            buffer = f"log_score_evidence{num_data_sources_current}_k_{alphabet[i1]}{i2}"
+                        else:
+                            buffer = f"log_score_evidence{num_data_sources_current}_theta_{alphabet[i1]}{i2}"
+                        parameter_manager.AddParameterMapping(
+                            buffer, self.log_score_evidence[num_data_sources_current][i0][i1][i2])
+        # raise Exception("Not implemented")
 
     # load sequence
     def LoadSequence(self, sstruct):
-        self.cache_initialized= False
-        self.L=sstruct.GetLength();
-        self.SIZE=(self.L+1)*(self.L+2) / 2
-        self.s=[0]*(self.L+1)
-        self.offset=[0]*(self.L+1)
-        self.allow_unpaired_position=[0]*(self.L+1)
-        self.allow_unpaired=[0]*(self.SIZE)
-        self.allow_paired=[0]*(self.SIZE)
-        self.loss_unpaired_position=[0]*(self.L+1)
-        self.loss_unpaired=[0]*(self.SIZE)
-        self.loss_paired=[0]*(self.SIZE)
-        
+        self.cache_initialized = False
+        self.L = sstruct.GetLength()
+        self.SIZE = (self.L+1)*(self.L+2) // 2
+        print(self.SIZE)
+        self.s = [0]*(self.L+1)
+        self.offset = [0]*(self.L+1)
+        self.allow_unpaired_position = [0]*(self.L+1)
+        self.allow_unpaired = [0]*(self.SIZE)
+        self.allow_paired = [0]*(self.SIZE)
+        self.loss_unpaired_position = [0]*(self.L+1)
+        self.loss_unpaired = [0]*(self.SIZE)
+        self.loss_paired = [0]*(self.SIZE)
+
         self.cache_score_helix_sums.clear()
-        self.cache_score_helix_sums=[(0,0)]*((2*self.L+1)*self.L)
+        self.cache_score_helix_sums = [(0, 0)]*((2*self.L+1)*self.L)
+        sequence = sstruct.GetSequences()[0]
+        self.s[0] = len(alphabet)
+        for i in range(1, self.L+1):
+            self.s[i] = self.char_mapping[ord(sequence[i])]
 
-        
+        for i in range(0, self.L):
+            self.offset[i] = self.ComputeRowOffset(i, self.L+1)
+            self.allow_unpaired_position[i] = 1
+            self.loss_unpaired_position[i] = 0
 
+        for i in range(0, self.SIZE):
+            self.allow_unpaired[i] = 1
+            self.allow_paired[i] = 1
+            self.loss_unpaired[i] = 0
+            self.loss_paired[i] = 0
 
+        for i in range(0, self.L+1):
+            self.allow_paired[self.offset[0]+i] = 0
+            self.allow_paired[self.offset[i]+i] = 0
+        if not self.allow_noncomplementary:
+            for i in range(1, self.L+1):
+                for j in range(1, self.L+1):
+                    if not self.IsComplementary(i, j):
+                        self.allow_paired[self.offset[i]+j] = 0
+        for i in range(0, self.num_data_sources):
+            self.score_unpaired_position_raw[i].clear()
+            self.score_unpaired_position[i].clear()
+            self.score_paired_position_raw[i].clear()
+            self.score_paired_position[i].clear()
+            self.score_unpaired_position_raw[i] = sstruct.GetUnpairedPotentials(
+                i)
+            self.score_paired_position_raw[i] = sstruct.GetPairedPotentials(i)
 
-
-
-
-        raise Exception("Not implemented")
+        # raise Exception("Not implemented")
 
     # load parameter values
-    def LoadValues(self, values):
-        # load loss function
-        raise Exception("Not implemented")
+
+    def LoadValues(self, values: list):
+        print(len(values), self.parameter_manager.GetNumLogicalParameters())
+        if len(values) != self.parameter_manager.GetNumLogicalParameters():
+            raise Exception("Parameter Size MisMatch")
+        self.cache_initialized = False
+        for i in range(0, len(values)):
+            physical_parameters = self.parameter_manager.GetPhysicalParameters(i)
+            for j in range(0, len(physical_parameters)):
+                physical_parameters[j] = (values[i],0)
+        # raise Exception("Not implemented")
 
     def UseLoss(self, true_mapping,  example_loss):
         raise Exception("Not implemented")
@@ -302,83 +509,83 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def PredictPairingsPosterior(self,   gamma: int):
-        if(not(gamma>0)):
+        if(not(gamma > 0)):
             print("Non-negative gamma expected.")
-        unpaired_posterior =[]
-        score=[]
-        traceback=[]
-        
-        for i in range(1,self.L+1):
+        unpaired_posterior = []
+        score = []
+        traceback = []
+
+        for i in range(1, self.L+1):
             unpaired_posterior.append(1)
             for j in range(i):
                 unpaired_posterior[i] -= self.posterior[self.offset[j]+i]
-            for j in range(i+1,self.L+1):
+            for j in range(i+1, self.L+1):
                 unpaired_posterior[i] -= self.posterior[self.offset[i]+j]
 
-        for i in range(1,self.L+1):
+        for i in range(1, self.L+1):
             unpaired_posterior[i] /= 2 * gamma
-        score=[-1]*self.SIZE
-        traceback=[-1]*self.SIZE
+        score = [-1]*self.SIZE
+        traceback = [-1]*self.SIZE
         print(self.SIZE)
-        #DP
+        # DP
 
-        for i in range(self.L,-1,-1):
-            for j in range(i,self.L+1):
-                this_score=score[self.offset[i]+j]
-                this_traceback = traceback[self.offset[i]+j];
-                if(i==j):
-                    UPDATE_MAX(this_score, this_traceback,0, 0)
+        for i in range(self.L, -1, -1):
+            for j in range(i, self.L+1):
+                this_score = score[self.offset[i]+j]
+                this_traceback = traceback[self.offset[i]+j]
+                if(i == j):
+                    UPDATE_MAX(this_score, this_traceback, 0, 0)
                 else:
                     if(self.allow_unpaired_position[i+1]):
-                        UPDATE_MAX(this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
+                        UPDATE_MAX(
+                            this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
                     if (self.allow_unpaired_position[j]):
-                        UPDATE_MAX(this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
+                        UPDATE_MAX(
+                            this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
                     if(i+2 <= j):
                         if(self.allow_paired[self.offset[i+1]+j]):
-                            UPDATE_MAX(this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
+                            UPDATE_MAX(
+                                this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
 
-
-
-                        p1=score[self.offset[i]+i+1]
-                        p2=score[self.offset[i+1]+j]
-                        for k in range(i+1,j):
-                            UPDATE_MAX(this_score, this_traceback, (p1) + (p2), k+4)
-                            p1+=1
+                        p1 = score[self.offset[i]+i+1]
+                        p2 = score[self.offset[i+1]+j]
+                        for k in range(i+1, j):
+                            UPDATE_MAX(this_score, this_traceback,
+                                       (p1) + (p2), k+4)
+                            p1 += 1
                             p2 += self.L-k
 
-        solution=[SStruct.UNPAIRED]*(self.L+1)
+        solution = [SStruct.UNPAIRED]*(self.L+1)
         solution[0] = SStruct.UNKNOWN
         traceback_queue = Queue(0)
-        traceback_queue.put((0,self.L))
+        traceback_queue.put((0, self.L))
 
-        while(traceback_queue.qsize()!=0):
-            t=traceback_queue.get()
-            i=t[0]
-            j=t[1]
+        while(traceback_queue.qsize() != 0):
+            t = traceback_queue.get()
+            i = t[0]
+            j = t[1]
 
-            if(traceback[self.offset[i]+j]==-1):
+            if(traceback[self.offset[i]+j] == -1):
                 print("should not get here ")
-                
-            elif(traceback[self.offset[i]+j]==0):
+
+            elif(traceback[self.offset[i]+j] == 0):
                 raise Exception("Not implemented")
-            elif(traceback[self.offset[i]+j]==1):
-                traceback_queue.put((i+1,j))
-                
-            elif(traceback[self.offset[i]+j]==2):
-                traceback_queue.put((i,j-1))
-            elif(traceback[self.offset[i]+j]==3):
-                solution[i+1] = j;
-                solution[j] = i+1;
-                traceback_queue.put((i+1,j-1))
+            elif(traceback[self.offset[i]+j] == 1):
+                traceback_queue.put((i+1, j))
+
+            elif(traceback[self.offset[i]+j] == 2):
+                traceback_queue.put((i, j-1))
+            elif(traceback[self.offset[i]+j] == 3):
+                solution[i+1] = j
+                solution[j] = i+1
+                traceback_queue.put((i+1, j-1))
 
             else:
-                k=traceback[self.offset[i]+j]-4
-                traceback_queue.put((i,k))
-                traceback_queue.put((k,j))
+                k = traceback[self.offset[i]+j]-4
+                traceback_queue.put((i, k))
+                traceback_queue.put((k, j))
 
         return solution
-
-        
 
     def PredictPairingsPosteriorCentroid(self, gamma):
         raise Exception("Not implemented")
@@ -430,8 +637,18 @@ class InferenceEngine:
     def LogGammaProb(self,  data,  which_data,  isUnpaired,  seq):
         raise Exception("Not implemented")
 
-    def UpdateEvidenceStructures(self,  which_data):
-        raise Exception("Not implemented")
+    def UpdateEvidenceStructuresK(self,  which_data):
+        self.score_unpaired_position[which_data].clear()
+        self.score_paired_position[which_data].clear()
+
+        for i in range(0, self.L):
+            score_unpaired = 0  if self.score_unpaired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(self.score_unpaired_position_raw[which_data][i],which_data,1,self.s[i+1])
+            self.score_unpaired_position[which_data].append(score_unpaired)
+
+            score_paired = 0 if self.score_paired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(score_paired_position_raw[which_data][i],which_data,0,s[i+1])
+            self.score_paired_position[which_data].append(score_paired)
+        
 
     def UpdateEvidenceStructures(self):
-        raise Exception("Not implemented")
+        for i in range(0, self.num_data_sources):
+            UpdateEvidenceStructuresK(i)
