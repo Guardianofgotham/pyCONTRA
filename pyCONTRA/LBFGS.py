@@ -65,7 +65,7 @@ class LBFGS:
                 break
             if(step == 0):
                 num_consecutive_small_steps = self.MAX_SMALL_STEPS
-            elif((f[k%2] - f[(k+1)%2]) / max(1, f0 - f[(k+1)%2]) < self.SMALL_STEP_RATIO)
+            elif((f[k%2] - f[(k+1)%2]) / max(1, f0 - f[(k+1)%2]) < self.SMALL_STEP_RATIO):
                 num_consecutive_small_steps+=1
             else:
                 num_consecutive_small_steps = 0
