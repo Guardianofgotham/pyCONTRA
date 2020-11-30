@@ -4,6 +4,7 @@ from pyCONTRA.SStruct import *
 from pyCONTRA.ParameterManager import *
 import array as arr
 from queue import Queue
+import sys
 
 
 class InferenceEngine:
@@ -34,13 +35,13 @@ class InferenceEngine:
         self.loss_unpaired, self.loss_paired = [], []
 
         # ## dynamic programming matrices
-        FCt, F5t, FMt, FM1t = [], [], [], []
-        FCv, F5v, FMv, FM1v = [], [], [], []
-        FCi, F5i, FMi, FM1i = [], [], [], []
-        FCo, F5o, FMo, FM1o = [], [], [], []
+        self.FCt, self.F5t, self.FMt, self.FM1t = [], [], [], []
+        self.FCv, self.F5v, self.FMv, self.FM1v = [], [], [], []
+        self.FCi, self.F5i, self.FMi, self.FM1i = [], [], [], []
+        self.FCo, self.F5o, self.FMo, self.FM1o = [], [], [], []
 
-        FCi_ess, F5i_ess, FMi_ess, FM1i_ess = [], [], [], []
-        FCo_ess, F5o_ess, FMo_ess, FM1o_ess = [], [], [], []
+        self.FCi_ess, self.F5i_ess, self.FMi_ess, self.FM1i_ess = [], [], [], []
+        self.FCo_ess, self.F5o_ess, self.FMo_ess, self.FM1o_ess = [], [], [], []
 
         self.posterior = []
 
@@ -494,6 +495,123 @@ class InferenceEngine:
     # MEA inference
 
     def ComputeInside(self):
+        self.InitializeCache()
+        self.F5i=[NEG_INF]*(self.L+1)
+        self.FCi=[NEG_INF]*(self.SIZE);
+        self.FMi=[NEG_INF]*(self.SIZE);
+        self.FM1i=[NEG_INF]*(self.SIZE);
+       
+
+        for i in range(self.L,-1,-1):#(int i = L; i >= 0; i--)
+            for j in range(i,self.L+1):#(int j = i; j <= L; j++
+            
+                FM2i = NEG_INF
+                if (i+2 <= j):
+                    p1 = self.FM1i[self.offset[i]+i+1]
+                    p2 = self.FMi[self.offset[i+1]+j]
+                    for k in range(i+1,j):# (register int k = i+1; k < j; k++)
+    
+                        Fast_LogPlusEquals(FM2i, (p1) + (p2))
+                        p1+=1
+                        p2 += self.L-k;
+                    
+                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
+                
+                    sum_i = (NEG_INF);
+                    
+                    # compute ScoreHairpin(i,j)
+                    
+                    if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
+                        Fast_LogPlusEquals(sum_i, ScoreHairpin(i,j));
+
+                    score_helix=0
+                    #score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
+                    if(i+2<=j):
+                        score_helix=ScoreBasePair(i+1,j)+ScoreHelixStacking(i,j+1)
+                    else:
+                        score_helix=0
+                    score_other = ScoreJunctionB(i,j);
+                    
+                    for p in range(i,(min(i+C_MAX_SINGLE_LENGTH,j)+1)):  #(int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
+                    
+                        if (p > i and not(self.allow_unpaired_position[p])):
+                            break;
+
+                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH);
+                        FCptr = self.FCi[self.offset[p+1]-1]
+                        for q in range(q_min,j-1,-1):#(int q = j; q >= q_min; q--):
+                            if(q < j and not(self.allow_unpaired_position[q+1])):
+                                break;
+                            if(not(self.allow_paired[self.offset[p+1]+q])):
+                                continue;
+                            
+                            if(p == i and q == j):
+                                score=score_helix + FCptr[q]
+                            # score = (p == i && q == j) ?
+                            else:
+                                score=score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q)
+
+                            #     (score_helix + FCptr[q]) :
+                            #     (score_other + cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +
+                            #     ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q));
+                            
+                                Fast_LogPlusEquals(sum_i, score)
+                        
+                            Fast_LogPlusEquals(sum_i, FM2i + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
+                
+                            self.FCi[self.offset[i]+j] = sum_i;
+                            if (0 < i and i+2 <= j and j < self.L):
+                                sum_i = NEG_INF
+                                
+                                #compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
+                                
+                                if (self.allow_paired[self.offset[i+1]+j]):
+                                    Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j));
+                                
+                                #compute FM1[i+1,j] + b
+                                
+                                if (self.allow_unpaired_position[i+1]):
+                                    Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1));
+                                
+                                self.FM1i[self.offset[i]+j] = sum_i;
+                            if ((0 < i) and (i+2 <= j) and (j < self.L)):
+                                
+                                sum_i = NEG_INF
+                                
+                                #compute SUM (i<k<j : FM1[i,k] + FM[k,j])
+                                
+                                Fast_LogPlusEquals(sum_i, FM2i);
+                                
+                                #compute FM[i,j-1] + b
+                                
+                                if (self.allow_unpaired_position[j]):
+                                    Fast_LogPlusEquals(sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j));
+                                
+                                #compute FM1[i,j]
+                                
+                                Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i]+j]);
+                                
+                                self.FMi[self.offset[i]+j] = sum_i
+            self.F5i[0] = 0
+            for j in range(1,self.L+1):#(int j = 1; j <= L; j++)
+                
+                sum_i = NEG_INF;
+                
+                #compute F5[j-1] + ScoreExternalUnpaired()
+                
+                if (self.allow_unpaired_position[j]):
+                    Fast_LogPlusEquals(sum_i, self.F5i[j-1] + ScoreExternalUnpaired(j));
+                
+                #compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
+                
+                for k in range(0,j):
+                    if (self.allow_paired[self.offset[k+1]+j]):
+                        Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
+                
+                self.F5i[j] = sum_i;
+
+                
+                # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
