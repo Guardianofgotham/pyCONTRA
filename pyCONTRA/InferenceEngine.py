@@ -2,6 +2,7 @@ from __future__ import annotations
 from pyCONTRA.config import *
 from pyCONTRA.SStruct import *
 from pyCONTRA.ParameterManager import *
+from pyCONTRA.LogSpace import *
 import array as arr
 from queue import Queue
 import sys
