@@ -56,11 +56,11 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
     else:
         if len(description)>1:
             if output_parens_destination != "":
-            MakeDirectory(output_parens_destination)
-        if output_bpseq_destination != "":
-            MakeDirectory(output_bpseq_destination)
-        if output_posteriors_destination != "":
-            MakeDirectory(output_posteriors_destination)
+                MakeDirectory(output_parens_destination)
+            if output_bpseq_destination != "":
+                MakeDirectory(output_bpseq_destination)
+            if output_posteriors_destination != "":
+                MakeDirectory(output_posteriors_destination)
         computation_wrapper.Predict(computation_wrapper.GetAllUnits(), w, args.gamma, args.log_base) 
     print("Inside Prediction")
     computation_engine.StopComputeNodes()
