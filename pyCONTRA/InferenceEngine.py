@@ -612,9 +612,84 @@ class InferenceEngine:
 
                 
                 # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
-        raise Exception("Not implemented")
+        # raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
+        self.F5o.clear(); self.F5o=[NEG_INF]*(self.L+1)
+        self.FCo.clear(); self.FCo=[NEG_INF]*self.SIZE
+        self.FMo.clear(); self.FMo=[NEG_INF]*self.SIZE
+        self.FM1o.clear(); self.FM1o=[NEG_INF]*self.SIZE
+        self.F5o[self.L] = 0
+        for j in range(self.L,0,-1):
+            if self.allow_unpaired_position[j]:
+                Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + ScoreExternalUnpaired(j))
+        
+            for k in range(0, j):
+                if self.allow_paired[self.offset[k+1]+j]:
+                    temp = self.F5o[j] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k)
+                    Fast_LogPlusEquals(self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
+                    Fast_LogPlusEquals(self.FCo[self.offset[k+1]+j-1], temp + self.F5i[k])
+        for i in range(0, self.L+1):
+            for j in range(self.L, i-1, -1):
+                FM2o = NEG_INF
+                if(i>0 and i+2<=j and j<self.L):
+                    Fast_LogPlusEquals(FM2o, self.FMo[self.offset[i]+j])
+                
+                    # // compute FM[i,j-1] + b
+                    
+                    if self.allow_unpaired_position[j]:
+                        Fast_LogPlusEquals(self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
+                    
+                    # // compute FM1[i,j]
+                    
+                    Fast_LogPlusEquals(self.FM1o[self.offset[i]+j], self.FMo[self.offset[i]+j])
+
+                    
+                if (0 < i and i+2 <= j and j < self.L):
+                # // compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
+                
+                    if (self.allow_paired[self.offset[i+1]+j]):
+                        Fast_LogPlusEquals(self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j))
+                    
+                    # // compute FM1[i+1,j] + b
+                    
+                    if (self.allow_unpaired_position[i+1]):
+                        Fast_LogPlusEquals(self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
+                
+
+                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
+                    score_helix = self.FCo[offset[i]+j] + ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1)  if (i+2 <= j) else 0
+                    score_other = self.FCo[self.offset[i]+j] + ScoreJunctionB(i,j);
+                    
+                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH,j)+1):
+                        if (p > i and not allow_unpaired_position[p]):
+                            break
+                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH)
+                        FCptr = self.FCo[self.offset[p+1]-1]
+                        for q in range(j, q_min-1, -1):
+                            if (q < j and not self.allow_unpaired_position[q+1]):
+                                break
+                            if (not self.allow_paired[self.offset[p+1]+q]):
+                                continue;
+                            Fast_LogPlusEquals(FCptr[q], 
+                                            score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1,q) + ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q))
+                    Fast_LogPlusEquals(FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
+                
+
+                
+                if i+2 <= j:
+                    p1i = self.FM1i[self.offset[i]+i+1]
+                    p2i = self.FMi[self.offset[i+1]+j]
+                    p1o = self.FM1o[self.offset[i]+i+1]
+                    p2o = self.FMo[self.offset[i+1]+j]
+                    for k in range(i+1, j):
+                        Fast_LogPlusEquals(p1o, FM2o + p2i)
+                        Fast_LogPlusEquals(p2o, FM2o + p1i)
+                        p1i+=1
+                        p1o+=1
+                        p2i += L-k
+                        p2o += L-k
+                    
         raise Exception("Not implemented")
 
     def ComputeOutside(self):
