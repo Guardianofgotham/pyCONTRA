@@ -218,22 +218,34 @@ class InferenceEngine:
         # raise Exception("Not implemented")
 
     def ScoreJunctionA(self, i: int,  j: int):
-        raise Exception("Not implemented")
+        assert(0 < i and i <= self.L and 0 <= j and j < self.L, "Invalid indices.");
+        return 0
 
     def ScoreJunctionB(self, i: int, j: int):
-        raise Exception("Not implemented")
+        assert(0 < i && i < L && 0 < j && j < L, "Invalid indices.");
+        return 0
 
     def ScoreBasePair(self, i: int,  j: int):
-        raise Exception("Not implemented")
+        assert(0 < i and i <= L and 0 < j and j <= L and i != j, "Invalid base-pair")
+        return 0
+
+    def ScoreUnpaired(i, j):
+        return 0
 
     def ScoreHairpin(self, i: int, j: int):
-        raise Exception("Not implemented")
+        assert(0 < i and i + C_MIN_HAIRPIN_LENGTH <= j and j < self.L, "Hairpin boundaries invalid.");
+        return self.ScoreUnpaired(i, j) + self.ScoreJunctionB(i, j)
 
     def ScoreHelix(self, i: int,  j: int, m: int):
         raise Exception("Not implemented")
 
     def ScoreSingleNucleotides(self, i: int,  j: int, p: int, q: int):
-        raise Exception("Not implemented")
+        assert(0 < i and i <= p and p + 2 <= q and q <= j and j < self.L, "Single-branch loop boundaries invalid.")
+        l1 = p - i
+        l2 = j - q
+        assert (l1 + l2 > 0 and l1 >= 0 and l2 >= 0 and l1 + l2 <= C_MAX_SINGLE_LENGTH, "Invalid single-branch loop size.");
+        return self.ScoreUnpaired(i, p) + self.ScoreUnpaired(q, j)
+        # raise Exception("Not implemented")
 
     def ScoreSingle(self, i: int, j: int, p: int, q: int):
         raise Exception("Not implemented")
@@ -599,6 +611,21 @@ class InferenceEngine:
         return self.score_external_paired[0]
     # MEA inference
 
+    def ScoreHelixStacking(self, i,j):
+        return 0
+
+    def ScoreMultiPaired(self):
+        return 0
+
+    def ScoreMultiBase(self):
+        return 0
+
+    def ScoreMultiUnpaired(self, i):
+        return self.ScoreUnpairedPosition(i)
+
+    def Clip(self, x, lower, upper):
+        return min(max(x, lower), upper)
+
     def ComputeInside(self):
         self.InitializeCache()
         self.F5i = [NEG_INF]*(self.L+1)
@@ -626,16 +653,16 @@ class InferenceEngine:
                     # compute ScoreHairpin(i,j)
 
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        sum_i = Fast_LogPlusEquals(sum_i, ScoreHairpin(i, j))
+                        sum_i = Fast_LogPlusEquals(sum_i, self.ScoreHairpin(i, j))
 
                     score_helix = 0
                     # score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
                     if(i+2 <= j):
-                        score_helix = ScoreBasePair(
-                            i+1, j)+ScoreHelixStacking(i, j+1)
+                        score_helix = self.ScoreBasePair(
+                            i+1, j)+self.ScoreHelixStacking(i, j+1)
                     else:
                         score_helix = 0
-                    score_other = ScoreJunctionB(i, j)
+                    score_other = self.ScoreJunctionB(i, j)
 
                     # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
                     for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
@@ -656,8 +683,8 @@ class InferenceEngine:
                                 score = score_helix + FCptr[q]
                             # score = (p == i && q == j) ?
                             else:
-                                score = score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(
-                                    p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q)
+                                score = score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + self.ScoreBasePair(
+                                    p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
 
                             #     (score_helix + FCptr[q]) :
                             #     (score_other + cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +
@@ -666,7 +693,7 @@ class InferenceEngine:
                                 sum_i = Fast_LogPlusEquals(sum_i, score)
 
                             sum_i = Fast_LogPlusEquals(
-                                sum_i, FM2i + ScoreJunctionA(i, j) + ScoreMultiPaired() + ScoreMultiBase())
+                                sum_i, FM2i + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
                             self.FCi[self.offset[i]+j] = sum_i
                             if (0 < i and i+2 <= j and j < self.L):
@@ -682,7 +709,7 @@ class InferenceEngine:
 
                                 if (self.allow_unpaired_position[i+1]):
                                     sum_i = Fast_LogPlusEquals(
-                                        sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1))
+                                        sum_i, self.FM1i[self.offset[i+1]+j] + self.ScoreMultiUnpaired(i+1))
 
                                 self.FM1i[self.offset[i]+j] = sum_i
                             if ((0 < i) and (i+2 <= j) and (j < self.L)):
@@ -697,7 +724,7 @@ class InferenceEngine:
 
                                 if (self.allow_unpaired_position[j]):
                                     sum_i = Fast_LogPlusEquals(
-                                        sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j))
+                                        sum_i, FMi[self.offset[i]+j-1] + self.ScoreMultiUnpaired(j))
 
                                 # compute FM1[i,j]
 
@@ -721,7 +748,7 @@ class InferenceEngine:
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     sum_i = Fast_LogPlusEquals(
-                        sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + ScoreBasePair(k+1, j) + ScoreJunctionA(j, k))
+                        sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
 
             self.F5i[j] = sum_i
 
@@ -729,7 +756,7 @@ class InferenceEngine:
         # raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
-        raise Exception("Not implemented")
+        return self.F5i[self.L]
 
     def ComputeOutside(self):
         self.F5o.clear()
@@ -749,7 +776,7 @@ class InferenceEngine:
             for k in range(0, j):
                 if self.allow_paired[self.offset[k+1]+j]:
                     temp = self.F5o[j] + self.ScoreExternalPaired() + \
-                        ScoreBasePair(k+1, j) + ScoreJunctionA(j, k)
+                        self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k)
                     self.F5o[k] = Fast_LogPlusEquals(
                         self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
                     self.FCo[self.offset[k+1]+j-1] = Fast_LogPlusEquals(
@@ -764,7 +791,7 @@ class InferenceEngine:
 
                     if self.allow_unpaired_position[j]:
                         self.FMo[self.offset[i]+j-1] = Fast_LogPlusEquals(
-                            self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
+                            self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + self.ScoreMultiUnpaired(j))
 
                     # // compute FM1[i,j]
 
@@ -776,19 +803,19 @@ class InferenceEngine:
 
                     if (self.allow_paired[self.offset[i+1]+j]):
                         self.FCo[self.offset[i+1]+j-1] = Fast_LogPlusEquals(
-                            self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j))
+                            self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + self.ScoreJunctionA(j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j))
 
                     # // compute FM1[i+1,j] + b
 
                     if (self.allow_unpaired_position[i+1]):
                         self.FM1o[self.offset[i+1]+j] = Fast_LogPlusEquals(
-                            self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
+                            self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + self.ScoreMultiUnpaired(i+1))
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-                    score_helix = self.FCo[offset[i]+j] + ScoreBasePair(
-                        i+1, j) + ScoreHelixStacking(i, j+1) if (i+2 <= j) else 0
+                    score_helix = self.FCo[offset[i]+j] + self.ScoreBasePair(
+                        i+1, j) + self.ScoreHelixStacking(i, j+1) if (i+2 <= j) else 0
                     score_other = self.FCo[self.offset[i] +
-                                           j] + ScoreJunctionB(i, j)
+                                           j] + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
                         if (p > i and not allow_unpaired_position[p]):
@@ -803,7 +830,7 @@ class InferenceEngine:
                             FCptr[q] = Fast_LogPlusEquals(FCptr[q],
                                                           score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q))
                     FM2o = Fast_LogPlusEquals(
-                        FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i, j) + ScoreMultiPaired() + ScoreMultiBase())
+                        FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
                 if i+2 <= j:
                     p1i = self.FM1i[self.offset[i]+i+1]
@@ -817,8 +844,6 @@ class InferenceEngine:
                         p1o += 1
                         p2i += L-k
                         p2o += L-k
-
-        raise Exception("Not implemented")
 
     def ComputeFeatureCountExpectations(self):
         raise Exception("Not implemented")
@@ -851,7 +876,7 @@ class InferenceEngine:
                             outside + ScoreHairpin(i, j)))
 
                     score_helix = outside + \
-                        ScoreBasePair(i+1, j) + ScoreHelixStacking(i,
+                        ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
                                                                    j+1) if (i+2 <= j) else 0
                     score_other = outside + ScoreJunctionB(i, j)
 
@@ -884,7 +909,7 @@ class InferenceEngine:
         for i in range(1, self.L+1):
             for j in range(i+1, self.L+1):
                 self.posterior[self.offset[i] +
-                               j] = Clip(self.posterior[self.offset[i]+j], 0, 1)
+                               j] = self.Clip(self.posterior[self.offset[i]+j], 0, 1)
 
         # raise Exception("Not implemented")
 
