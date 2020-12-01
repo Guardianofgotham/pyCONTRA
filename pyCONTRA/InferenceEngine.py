@@ -614,7 +614,10 @@ class InferenceEngine:
                 # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         # raise Exception("Not implemented")
 
-    def ComputeLogPartitionCoefficient(self):
+    def ComputeLogPartitionCoefficient(self): 
+        raise Exception("Not implemented")
+
+    def ComputeOutside(self):
         self.F5o.clear(); self.F5o=[NEG_INF]*(self.L+1)
         self.FCo.clear(); self.FCo=[NEG_INF]*self.SIZE
         self.FMo.clear(); self.FMo=[NEG_INF]*self.SIZE
@@ -689,10 +692,7 @@ class InferenceEngine:
                         p1o+=1
                         p2i += L-k
                         p2o += L-k
-                    
-        raise Exception("Not implemented")
-
-    def ComputeOutside(self):
+        
         raise Exception("Not implemented")
 
     def ComputeFeatureCountExpectations(self):
