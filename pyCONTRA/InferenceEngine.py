@@ -107,7 +107,7 @@ class InferenceEngine:
         self.score_multi_base = None
         self.score_multi_unpaired = None
         self.score_multi_paired = None
-        self.score_external_unpaired = None
+        self.score_external_unpaired = (0, 0)
         self.score_external_paired = None
         self.log_score_evidence = None
         self.cache_score_single = []
@@ -537,6 +537,13 @@ class InferenceEngine:
     def UseLoss(self, true_mapping,  example_loss):
         raise Exception("Not implemented")
 
+    def ScoreUnpairedPosition(self, i):
+        return 0
+
+    def ScoreExternalUnpaired(self, i):
+        return self.score_external_unpaired[0] + self.ScoreUnpairedPosition(i)
+
+
     # use Constraints
     def UseConstraints(self, true_mapping):
         # print(len(true_mapping), self.L+1)
@@ -679,7 +686,7 @@ class InferenceEngine:
                 #compute F5[j-1] + ScoreExternalUnpaired()
                 
                 if (self.allow_unpaired_position[j]):
-                    sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + ScoreExternalUnpaired(j));
+                    sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j));
                 
                 #compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
                 
@@ -704,7 +711,7 @@ class InferenceEngine:
         self.F5o[self.L] = 0
         for j in range(self.L,0,-1):
             if self.allow_unpaired_position[j]:
-                self.F5o[j-1] = Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + ScoreExternalUnpaired(j))
+                self.F5o[j-1] = Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + self.ScoreExternalUnpaired(j))
         
             for k in range(0, j):
                 if self.allow_paired[self.offset[k+1]+j]:
