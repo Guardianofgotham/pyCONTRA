@@ -218,22 +218,22 @@ class InferenceEngine:
         # raise Exception("Not implemented")
 
     def ScoreJunctionA(self, i: int,  j: int):
-        assert(0 < i and i <= self.L and 0 <= j and j < self.L, "Invalid indices.");
+        assert 0 < i and i <= self.L and 0 <= j and j < self.L, "Invalid indices."
         return 0
 
     def ScoreJunctionB(self, i: int, j: int):
-        assert(0 < i && i < L && 0 < j && j < L, "Invalid indices.");
+        assert 0 < i and i < L and 0 < j and j < L, "Invalid indices."
         return 0
 
     def ScoreBasePair(self, i: int,  j: int):
-        assert(0 < i and i <= L and 0 < j and j <= L and i != j, "Invalid base-pair")
+        assert 0 < i and i <= L and 0 < j and j <= L and i != j, "Invalid base-pair"
         return 0
 
     def ScoreUnpaired(i, j):
         return 0
 
     def ScoreHairpin(self, i: int, j: int):
-        assert(0 < i and i + C_MIN_HAIRPIN_LENGTH <= j and j < self.L, "Hairpin boundaries invalid.");
+        assert 0 < i and i + C_MIN_HAIRPIN_LENGTH <= j and j < self.L, "Hairpin boundaries invalid."
         return self.ScoreUnpaired(i, j) + self.ScoreJunctionB(i, j)
 
     def ScoreHelix(self, i: int,  j: int, m: int):

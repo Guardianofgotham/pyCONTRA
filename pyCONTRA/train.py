@@ -12,9 +12,9 @@ def RunTrainingMode(args: argparse.Namespace, description: list):
     computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
     computation_wrapper = ComputationWrapper(computation_engine)
 
-    if(computation_engine.IsComputeNode()):
-        computation_engine.RunAsComputeNode();
-        return
+    # if(computation_engine.IsComputeNode()):
+    #     computation_engine.RunAsComputeNode();
+    #     return
     
     initweights_filename = args.train_initweights_filename
     priorweights_filename = args.train_priorweights_filename
