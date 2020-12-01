@@ -590,7 +590,7 @@ class InferenceEngine:
                     p2 = self.FMi[self.offset[i+1]+j]
                     for k in range(i+1,j):# (register int k = i+1; k < j; k++)
     
-                        Fast_LogPlusEquals(FM2i, (p1) + (p2))
+                        FM2i = Fast_LogPlusEquals(FM2i, (p1) + (p2))
                         p1+=1
                         p2 += self.L-k;
                     
@@ -601,7 +601,7 @@ class InferenceEngine:
                     # compute ScoreHairpin(i,j)
                     
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        Fast_LogPlusEquals(sum_i, ScoreHairpin(i,j));
+                        sum_i = Fast_LogPlusEquals(sum_i, ScoreHairpin(i,j));
 
                     score_helix=0
                     #score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
@@ -634,9 +634,9 @@ class InferenceEngine:
                             #     (score_other + cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +
                             #     ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q));
                             
-                                Fast_LogPlusEquals(sum_i, score)
+                                sum_i = Fast_LogPlusEquals(sum_i, score)
                         
-                            Fast_LogPlusEquals(sum_i, FM2i + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
+                            sum_i = Fast_LogPlusEquals(sum_i, FM2i + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
                 
                             self.FCi[self.offset[i]+j] = sum_i;
                             if (0 < i and i+2 <= j and j < self.L):
@@ -645,12 +645,12 @@ class InferenceEngine:
                                 #compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
                                 
                                 if (self.allow_paired[self.offset[i+1]+j]):
-                                    Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j));
+                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j));
                                 
                                 #compute FM1[i+1,j] + b
                                 
                                 if (self.allow_unpaired_position[i+1]):
-                                    Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1));
+                                    sum_i = Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1));
                                 
                                 self.FM1i[self.offset[i]+j] = sum_i;
                             if ((0 < i) and (i+2 <= j) and (j < self.L)):
@@ -659,16 +659,16 @@ class InferenceEngine:
                                 
                                 #compute SUM (i<k<j : FM1[i,k] + FM[k,j])
                                 
-                                Fast_LogPlusEquals(sum_i, FM2i);
+                                sum_i = Fast_LogPlusEquals(sum_i, FM2i);
                                 
                                 #compute FM[i,j-1] + b
                                 
                                 if (self.allow_unpaired_position[j]):
-                                    Fast_LogPlusEquals(sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j));
+                                    sum_i = Fast_LogPlusEquals(sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j));
                                 
                                 #compute FM1[i,j]
                                 
-                                Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i]+j]);
+                                sum_i = Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i]+j]);
                                 
                                 self.FMi[self.offset[i]+j] = sum_i
             self.F5i[0] = 0
@@ -679,13 +679,13 @@ class InferenceEngine:
                 #compute F5[j-1] + ScoreExternalUnpaired()
                 
                 if (self.allow_unpaired_position[j]):
-                    Fast_LogPlusEquals(sum_i, self.F5i[j-1] + ScoreExternalUnpaired(j));
+                    sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + ScoreExternalUnpaired(j));
                 
                 #compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
                 
                 for k in range(0,j):
                     if (self.allow_paired[self.offset[k+1]+j]):
-                        Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
+                        sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
                 
                 self.F5i[j] = sum_i;
 
@@ -704,39 +704,39 @@ class InferenceEngine:
         self.F5o[self.L] = 0
         for j in range(self.L,0,-1):
             if self.allow_unpaired_position[j]:
-                Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + ScoreExternalUnpaired(j))
+                self.F5o[j-1] = Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + ScoreExternalUnpaired(j))
         
             for k in range(0, j):
                 if self.allow_paired[self.offset[k+1]+j]:
                     temp = self.F5o[j] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k)
-                    Fast_LogPlusEquals(self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
-                    Fast_LogPlusEquals(self.FCo[self.offset[k+1]+j-1], temp + self.F5i[k])
+                    self.F5o[k] = Fast_LogPlusEquals(self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
+                    self.FCo[self.offset[k+1]+j-1] = Fast_LogPlusEquals(self.FCo[self.offset[k+1]+j-1], temp + self.F5i[k])
         for i in range(0, self.L+1):
             for j in range(self.L, i-1, -1):
                 FM2o = NEG_INF
                 if(i>0 and i+2<=j and j<self.L):
-                    Fast_LogPlusEquals(FM2o, self.FMo[self.offset[i]+j])
+                    FM2o = Fast_LogPlusEquals(FM2o, self.FMo[self.offset[i]+j])
                 
                     # // compute FM[i,j-1] + b
                     
                     if self.allow_unpaired_position[j]:
-                        Fast_LogPlusEquals(self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
+                        self.FMo[self.offset[i]+j-1] = Fast_LogPlusEquals(self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
                     
                     # // compute FM1[i,j]
                     
-                    Fast_LogPlusEquals(self.FM1o[self.offset[i]+j], self.FMo[self.offset[i]+j])
+                    self.FM1o[self.offset[i]+j] = Fast_LogPlusEquals(self.FM1o[self.offset[i]+j], self.FMo[self.offset[i]+j])
 
                     
                 if (0 < i and i+2 <= j and j < self.L):
                 # // compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
                 
                     if (self.allow_paired[self.offset[i+1]+j]):
-                        Fast_LogPlusEquals(self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j))
+                        self.FCo[self.offset[i+1]+j-1] = Fast_LogPlusEquals(self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j))
                     
                     # // compute FM1[i+1,j] + b
                     
                     if (self.allow_unpaired_position[i+1]):
-                        Fast_LogPlusEquals(self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
+                        self.FM1o[self.offset[i+1]+j] = Fast_LogPlusEquals(self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
                 
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
@@ -753,9 +753,9 @@ class InferenceEngine:
                                 break
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue;
-                            Fast_LogPlusEquals(FCptr[q], 
+                            FCptr[q] = Fast_LogPlusEquals(FCptr[q], 
                                             score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1,q) + ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q))
-                    Fast_LogPlusEquals(FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
+                    FM2o = Fast_LogPlusEquals(FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
                 
 
                 
@@ -765,8 +765,8 @@ class InferenceEngine:
                     p1o = self.FM1o[self.offset[i]+i+1]
                     p2o = self.FMo[self.offset[i+1]+j]
                     for k in range(i+1, j):
-                        Fast_LogPlusEquals(p1o, FM2o + p2i)
-                        Fast_LogPlusEquals(p2o, FM2o + p1i)
+                        p1o = Fast_LogPlusEquals(p1o, FM2o + p2i)
+                        p2o = Fast_LogPlusEquals(p2o, FM2o + p1i)
                         p1i+=1
                         p1o+=1
                         p2i += L-k
