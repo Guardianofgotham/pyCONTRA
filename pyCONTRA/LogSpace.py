@@ -55,8 +55,8 @@ def Fast_LogExpPlusOne(x):
     # Approximating interval: (7.81627, 11.8625) --> ((T(-0.0000113994)*x+T(0.0003734731))*x+T(0.9959107193))*x+T(0.0149855051);
     # 8 polynomials needed.
 
-    assert (float(0.0000000000) <= x and x <= float(
-        11.8624794162), "Argument out-of-range.")
+    assert float(0.0000000000) <= x and x <= float(
+        11.8624794162), "Argument out-of-range."
     if (x < float(3.3792499610)):
 
         if (x < float(1.6320158198)):
@@ -81,7 +81,7 @@ def Fast_LogExpPlusOne(x):
 
 
 def Fast_LogExpMinusOne(x):
-    assert(float(0) <= x and x <= float(30), "Argument out-of-range.")
+    assert float(0) <= x and x <= float(30), "Argument out-of-range."
     return math.log(math.exp(x) - float(1))
 
 

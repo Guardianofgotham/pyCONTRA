@@ -7,14 +7,14 @@ from pyCONTRA.OptimizationWrapper import *
 
 def RunTrainingMode(args: argparse.Namespace, description: list):
     parameter_manager = ParameterManager()
-    inference_engine = InferenceEngine()
+    inference_engine = InferenceEngine(args.allow_noncomplementary, args.num_data_sources)
     inference_engine.RegisterParameters(parameter_manager)
     computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
     computation_wrapper = ComputationWrapper(computation_engine)
 
-    if(computation_engine.IsComputeNode()):
-        computation_engine.RunAsComputeNode();
-        return
+    # if(computation_engine.IsComputeNode()):
+    #     computation_engine.RunAsComputeNode();
+    #     return
     
     initweights_filename = args.train_initweights_filename
     priorweights_filename = args.train_priorweights_filename

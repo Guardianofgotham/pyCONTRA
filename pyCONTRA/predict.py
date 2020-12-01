@@ -34,31 +34,33 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
 
     if args.gamma < 0:
         if output_parens_destination != "":
-            raise Exception("Not implemented")
+            MakeDirectory(output_parens_destination)
         if output_bpseq_destination != "":
-            raise Exception("Not implemented")
+            MakeDirectory(output_bpseq_destination)
         if output_posteriors_destination != "":
-            raise Exception("Not implemented")
+            MakeDirectory(output_posteriors_destination)
 
         for k in range(-5, 11):
             gamma = 2.0**float(k)
 
             if(len(description) > 1):
                 if output_parens_destination!="":
-                    raise Exception("Not implemented")
+                    MakeDirectory("{}{}{}.gamma={}".format(output_parens_destination,DIR_SEPARATOR_CHAR,GetBaseName(output_parens_destination), gamma))
                 if output_bpseq_destination!="":
-                    raise Exception("Not implemented")
+                    MakeDirectory("{}{}{}.gamma={}".format(
+                        output_bpseq_destination, DIR_SEPARATOR_CHAR, GetBaseName(output_bpseq_destination), gamma))
                 if output_posteriors_destination!="":
-                    raise Exception("Not implemented")
+                    MakeDirectory("{}{}{}.gamma={}".format(
+                        output_posteriors_destination, DIR_SEPARATOR_CHAR, GetBaseName(output_posteriors_destination), gamma))
             computation_wrapper.Predict(computation_engine, w, gamma, args.log_base)
     else:
         if len(description)>1:
-            if output_parens_destination!="":
-                raise Exception("Not implemented")
-            if output_bpseq_destination!="":
-                raise Exception("Not implemented")
-            if output_posteriors_destination!="":
-                raise Exception("Not implemented")
+            if output_parens_destination != "":
+            MakeDirectory(output_parens_destination)
+        if output_bpseq_destination != "":
+            MakeDirectory(output_bpseq_destination)
+        if output_posteriors_destination != "":
+            MakeDirectory(output_posteriors_destination)
         computation_wrapper.Predict(computation_wrapper.GetAllUnits(), w, args.gamma, args.log_base) 
     print("Inside Prediction")
     computation_engine.StopComputeNodes()
