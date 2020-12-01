@@ -449,13 +449,19 @@ class ComputationEngine(DistributedComputationBase):
                 self.inference_engine.ComputeOutsideESS()
                 self.inference_engine.ComputePosteriorESS()
             else:
+                print("inside started")
                 self.inference_engine.ComputeInside()
+                print("inside finished")
                 if self.options.partition_function_only:
                     print(
                         f"Log partition coefficient for {self.description[nonshared.index].input_filename} :")
                     return
+                print("outside started")
                 self.inference_engine.ComputeOutside()
+                print("outside ended")
+                print("posterior started")
                 self.inference_engine.ComputePosterior()
+                print("posterior ended")
             solution = SStruct(sstruct, None)
             if self.options.centroid_estimator:
                 print(f"Predicting using centroid estimator.")

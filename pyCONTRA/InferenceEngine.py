@@ -108,7 +108,7 @@ class InferenceEngine:
         self.score_multi_unpaired = None
         self.score_multi_paired = None
         self.score_external_unpaired = (0, 0)
-        self.score_external_paired = None
+        self.score_external_paired = (0, 0)
         self.log_score_evidence = None
         self.cache_score_single = []
         for i in range(C_MAX_SINGLE_LENGTH+1):
@@ -128,64 +128,79 @@ class InferenceEngine:
     def InitializeCache(self):
         if self.cache_initialized:
             return
-        self.cache_initialized=True
+        self.cache_initialized = True
 
-        #if PARAMS_HAIRPIN_LENGTH
-        self.cache_score_hairpin_length[0] = (self.score_hairpin_length_at_least[0][0], self.cache_score_hairpin_length[0][1])
+        # if PARAMS_HAIRPIN_LENGTH
+        self.cache_score_hairpin_length[0] = (
+            self.score_hairpin_length_at_least[0][0], self.cache_score_hairpin_length[0][1])
         for i in range(1, D_MAX_HAIRPIN_LENGTH+1):
-            self.cache_score_hairpin_length[i] = (self.cache_score_hairpin_length[i-1][0] + self.score_hairpin_length_at_least[i][0], self.cache_score_hairpin_length[i][1])
+            self.cache_score_hairpin_length[i] = (
+                self.cache_score_hairpin_length[i-1][0] + self.score_hairpin_length_at_least[i][0], self.cache_score_hairpin_length[i][1])
 
-        #if PARAMS_BULGE_LENGTH
+        # if PARAMS_BULGE_LENGTH
         temp_cache_score_bulge_length = [0]*(D_MAX_BULGE_LENGTH+1)
         temp_cache_score_bulge_length[0] = self.score_bulge_length_at_least[0][0]
         for i in range(1, D_MAX_BULGE_LENGTH+1):
-            temp_cache_score_bulge_length[i] = temp_cache_score_bulge_length[i-1] + self.score_bulge_length_at_least[i][0]
-        
-        #if PARAMS_INTERNAL_LENGTH
+            temp_cache_score_bulge_length[i] = temp_cache_score_bulge_length[i -
+                                                                             1] + self.score_bulge_length_at_least[i][0]
+
+        # if PARAMS_INTERNAL_LENGTH
         temp_cache_score_internal_length = [0]*(D_MAX_INTERNAL_LENGTH+1)
         temp_cache_score_internal_length[0] = self.score_internal_length_at_least[0][0]
         for i in range(1, D_MAX_INTERNAL_LENGTH+1):
-            temp_cache_score_internal_length[i] = temp_cache_score_internal_length[i-1] + self.score_internal_length_at_least[i][0]
+            temp_cache_score_internal_length[i] = temp_cache_score_internal_length[i -
+                                                                                   1] + self.score_internal_length_at_least[i][0]
 
-        #if PARAMS_INTERNAL_SYMMETRY
-        temp_cache_score_internal_symmetric_length = [0]*(D_MAX_INTERNAL_SYMMETRIC_LENGTH+1)
-        temp_cache_score_internal_symmetric_length[0] = self.score_internal_symmetric_length_at_least[0][0];
+        # if PARAMS_INTERNAL_SYMMETRY
+        temp_cache_score_internal_symmetric_length = [
+            0]*(D_MAX_INTERNAL_SYMMETRIC_LENGTH+1)
+        temp_cache_score_internal_symmetric_length[0] = self.score_internal_symmetric_length_at_least[0][0]
         for i in range(1, D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
-            temp_cache_score_internal_symmetric_length[i] = temp_cache_score_internal_symmetric_length[i-1] + self.score_internal_symmetric_length_at_least[i]
-        
-        #if PARAMS_INTERNAL_ASYMMETRY
+            temp_cache_score_internal_symmetric_length[i] = temp_cache_score_internal_symmetric_length[i -
+                                                                                                       1] + self.score_internal_symmetric_length_at_least[i]
+
+        # if PARAMS_INTERNAL_ASYMMETRY
         temp_cache_score_internal_asymmetry = [0]*(D_MAX_INTERNAL_ASYMMETRY+1)
         temp_cache_score_internal_asymmetry[0] = self.score_internal_asymmetry_at_least[0][0]
         for i in range(1, D_MAX_INTERNAL_ASYMMETRY+1):
-            temp_cache_score_internal_asymmetry[i] = temp_cache_score_internal_asymmetry[i-1] + self.score_internal_asymmetry_at_least[i][0]
+            temp_cache_score_internal_asymmetry[i] = temp_cache_score_internal_asymmetry[i -
+                                                                                         1] + self.score_internal_asymmetry_at_least[i][0]
 
         for l1 in range(0, C_MAX_SINGLE_LENGTH+1):
             for l2 in range(0, C_MAX_SINGLE_LENGTH-l1+1):
-                self.cache_score_single[l1][l2] = (0, self.cache_score_single[l1][l2][1])
+                self.cache_score_single[l1][l2] = (
+                    0, self.cache_score_single[l1][l2][1])
                 if (l1 == 0 and l2 == 0):
-                     continue;
+                    continue
                 if (l1 == 0 or l2 == 0):
-                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_bulge_length[min(D_MAX_BULGE_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_bulge_length[min(
+                        D_MAX_BULGE_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
                 else:
                     if (l1 <= D_MAX_INTERNAL_EXPLICIT_LENGTH and l2 <= D_MAX_INTERNAL_EXPLICIT_LENGTH):
-                        self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+self.score_internal_explicit[l1][l2][0],self.cache_score_single[l1][l2][1])
-                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_length[min(D_MAX_INTERNAL_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
+                        self.cache_score_single[l1][l2] = (
+                            self.cache_score_single[l1][l2][0]+self.score_internal_explicit[l1][l2][0], self.cache_score_single[l1][l2][1])
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_length[min(
+                        D_MAX_INTERNAL_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
                     if (l1 == l2):
-                        self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_symmetric_length[min(D_MAX_INTERNAL_SYMMETRIC_LENGTH, l1)], self.cache_score_single[l1][l2][1])
-                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_asymmetry[min(D_MAX_INTERNAL_ASYMMETRY, abs(l1-l2))],self.cache_score_single[l1][l2][1])
+                        self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_symmetric_length[min(
+                            D_MAX_INTERNAL_SYMMETRIC_LENGTH, l1)], self.cache_score_single[l1][l2][1])
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_asymmetry[min(
+                        D_MAX_INTERNAL_ASYMMETRY, abs(l1-l2))], self.cache_score_single[l1][l2][1])
 
-
-        self.FillScores(self.cache_score_helix_sums, 0, len(self.cache_score_helix_sums), 0)
+        self.FillScores(self.cache_score_helix_sums, 0,
+                        len(self.cache_score_helix_sums), 0)
         for i in range(self.L, 0, -1):
             for j in range(i+3, self.L+1):
-                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i-2], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
+                    i+j)*self.L+j-i-2], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                 if (self.allow_paired[self.offset[i+1]+j-1]):
-                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*L+j-i][0]+ScoreBasePair(i+1,j-1),self.cache_score_helix_sums[(i+j)*L+j-i][1])
+                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
+                        i+j)*L+j-i][0]+ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*L+j-i][1])
                     if (self.allow_paired[self.offset[i]+j]):
-                        self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*L+j-i][0]+ScoreHelixStacking(i,j), self.cache_score_helix_sums[(i+j)*L+j-i][1])
+                        self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
+                            i+j)*L+j-i][0]+ScoreHelixStacking(i, j), self.cache_score_helix_sums[(i+j)*L+j-i][1])
 
-        
-    def FillScores(self,container: list,begin: int, end: int, value: float):
+    def FillScores(self, container: list, begin: int, end: int, value: float):
         for i in range(begin, end):
             container[i] = (value, container[i][1])
 
@@ -323,11 +338,13 @@ class InferenceEngine:
                 for i2 in range(0, M+1):
                     for j2 in range(0, M+1):
                         if (i1 == M or j1 == M or i2 == M or j2 == M):
-                            self.score_terminal_mismatch[i1][j1][i2][j2] = (0, 0)
+                            self.score_terminal_mismatch[i1][j1][i2][j2] = (
+                                0, 0)
                         else:
                             buffer = f"terminal_mismatch_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}{alphabet[j2]}"
-                            parameter_manager.AddParameterMapping(buffer, self.score_terminal_mismatch[i1][j1][i2][j2])
-        
+                            parameter_manager.AddParameterMapping(
+                                buffer, self.score_terminal_mismatch[i1][j1][i2][j2])
+
         for i in range(0, D_MAX_HAIRPIN_LENGTH+1):
             buffer = f"hairpin_length_at_least_{i}"
             parameter_manager.AddParameterMapping(
@@ -349,7 +366,7 @@ class InferenceEngine:
                 buffer = f"bulge_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
                     buffer, self.score_bulge_length_at_least[i])
-        
+
         for i in range(0, D_MAX_INTERNAL_LENGTH+1):
             if (i < 2):
                 self.score_internal_length_at_least[i] = (0, 0)
@@ -357,7 +374,7 @@ class InferenceEngine:
                 buffer = f"internal_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
                     buffer, self.score_internal_length_at_least[i])
-        
+
         for i in range(0,  D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
             if (i == 0):
                 self.score_internal_symmetric_length_at_least[i] = (0, 0)
@@ -365,7 +382,7 @@ class InferenceEngine:
                 buffer = f"internal_symmetric_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
                     buffer, self.score_internal_symmetric_length_at_least[i])
-        
+
         for i in range(0, D_MAX_INTERNAL_ASYMMETRY+1):
             if (i == 0):
                 self.score_internal_asymmetry_at_least[i] = (0, 0)
@@ -373,7 +390,7 @@ class InferenceEngine:
                 buffer = f"internal_asymmetry_at_least_{i}"
                 parameter_manager.AddParameterMapping(
                     buffer, self.score_internal_asymmetry_at_least[i])
-        
+
         for i1 in range(0,  M+1):
             if (i1 == M):
                 self.score_bulge_0x1_nucleotides[i1] = (0, 0)
@@ -384,7 +401,7 @@ class InferenceEngine:
                     buffer, self.score_bulge_0x1_nucleotides[i1])
                 parameter_manager.AddParameterMapping(
                     buffer, self.score_bulge_1x0_nucleotides[i1])
-        
+
         for i1 in range(0, M+1):
             for i2 in range(0, M+1):
                 if (i1 == M or i2 == M):
@@ -398,7 +415,7 @@ class InferenceEngine:
                 else:
                     parameter_manager.AddParameterMapping(
                         buffer2, self.score_internal_1x1_nucleotides[i1][i2])
-        
+
         for i1 in range(0, M+1):
             for j1 in range(0, M+1):
                 for i2 in range(0, M+1):
@@ -414,7 +431,7 @@ class InferenceEngine:
                         else:
                             parameter_manager.AddParameterMapping(
                                 buffer2, self.score_helix_stacking[i1][j1][i2][j2])
-        
+
         print(f"PMANAGER: {parameter_manager.GetNumLogicalParameters()}")
         for i in range(0, M+1):
             for j in range(0, M+1):
@@ -424,14 +441,14 @@ class InferenceEngine:
                     buffer = f"helix_closing_{alphabet[i]}{alphabet[j]}"
                     parameter_manager.AddParameterMapping(
                         buffer, self.score_helix_closing[i][j])
-        
+
         parameter_manager.AddParameterMapping(
             "multi_base", self.score_multi_base)
         parameter_manager.AddParameterMapping(
             "multi_unpaired", self.score_multi_unpaired)
         parameter_manager.AddParameterMapping(
             "multi_paired", self.score_multi_paired)
-        
+
         for i1 in range(0, M+1):
             for j1 in range(0, M+1):
                 for i2 in range(0, M+1):
@@ -442,7 +459,6 @@ class InferenceEngine:
                         parameter_manager.AddParameterMapping(
                             buffer, self.score_dangle_left[i1][j1][i2])
 
-        
         for i1 in range(0, M+1):
             for j1 in range(0, M+1):
                 for j2 in range(0, M+1):
@@ -456,7 +472,7 @@ class InferenceEngine:
             "external_unpaired", self.score_external_unpaired)
         parameter_manager.AddParameterMapping(
             "external_paired", self.score_external_paired)
-        parameter_manager.AddParameterGroup("evidence_cpds");
+        parameter_manager.AddParameterGroup("evidence_cpds")
         for num_data_sources_current in range(0, self.num_data_sources):
             for i0 in range(0, 2):
                 for i1 in range(0, M):
@@ -529,9 +545,10 @@ class InferenceEngine:
             raise Exception("Parameter Size MisMatch")
         self.cache_initialized = False
         for i in range(0, len(values)):
-            physical_parameters = self.parameter_manager.GetPhysicalParameters(i)
+            physical_parameters = self.parameter_manager.GetPhysicalParameters(
+                i)
             for j in range(0, len(physical_parameters)):
-                physical_parameters[j] = (values[i],0)
+                physical_parameters[j] = (values[i], 0)
         # raise Exception("Not implemented")
 
     def UseLoss(self, true_mapping,  example_loss):
@@ -543,8 +560,8 @@ class InferenceEngine:
     def ScoreExternalUnpaired(self, i):
         return self.score_external_unpaired[0] + self.ScoreUnpairedPosition(i)
 
-
     # use Constraints
+
     def UseConstraints(self, true_mapping):
         # print(len(true_mapping), self.L+1)
         if(not(len(true_mapping) == self.L+1)):
@@ -578,194 +595,216 @@ class InferenceEngine:
     def ComputeViterbiFeatureCounts(self):
         raise Exception("Not implemented")
 
+    def ScoreExternalPaired(self):
+        return self.score_external_paired[0]
     # MEA inference
 
     def ComputeInside(self):
         self.InitializeCache()
-        self.F5i=[NEG_INF]*(self.L+1)
-        self.FCi=[NEG_INF]*(self.SIZE);
-        self.FMi=[NEG_INF]*(self.SIZE);
-        self.FM1i=[NEG_INF]*(self.SIZE);
-       
+        self.F5i = [NEG_INF]*(self.L+1)
+        self.FCi = [NEG_INF]*(self.SIZE)
+        self.FMi = [NEG_INF]*(self.SIZE)
+        self.FM1i = [NEG_INF]*(self.SIZE)
 
-        for i in range(self.L,-1,-1):#(int i = L; i >= 0; i--)
-            for j in range(i,self.L+1):#(int j = i; j <= L; j++
-            
+        for i in range(self.L, -1, -1):  # (int i = L; i >= 0; i--)
+            for j in range(i, self.L+1):  # (int j = i; j <= L; j++
+
                 FM2i = NEG_INF
                 if (i+2 <= j):
                     p1 = self.FM1i[self.offset[i]+i+1]
                     p2 = self.FMi[self.offset[i+1]+j]
-                    for k in range(i+1,j):# (register int k = i+1; k < j; k++)
-    
+                    for k in range(i+1, j):  # (register int k = i+1; k < j; k++)
+
                         FM2i = Fast_LogPlusEquals(FM2i, (p1) + (p2))
-                        p1+=1
-                        p2 += self.L-k;
-                    
+                        p1 += 1
+                        p2 += self.L-k
+
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-                
-                    sum_i = (NEG_INF);
-                    
+
+                    sum_i = (NEG_INF)
+
                     # compute ScoreHairpin(i,j)
-                    
+
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        sum_i = Fast_LogPlusEquals(sum_i, ScoreHairpin(i,j));
+                        sum_i = Fast_LogPlusEquals(sum_i, ScoreHairpin(i, j))
 
-                    score_helix=0
-                    #score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
-                    if(i+2<=j):
-                        score_helix=ScoreBasePair(i+1,j)+ScoreHelixStacking(i,j+1)
+                    score_helix = 0
+                    # score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
+                    if(i+2 <= j):
+                        score_helix = ScoreBasePair(
+                            i+1, j)+ScoreHelixStacking(i, j+1)
                     else:
-                        score_helix=0
-                    score_other = ScoreJunctionB(i,j);
-                    
-                    for p in range(i,(min(i+C_MAX_SINGLE_LENGTH,j)+1)):  #(int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
-                    
-                        if (p > i and not(self.allow_unpaired_position[p])):
-                            break;
+                        score_helix = 0
+                    score_other = ScoreJunctionB(i, j)
 
-                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH);
+                    # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
+                    for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
+
+                        if (p > i and not(self.allow_unpaired_position[p])):
+                            break
+
+                        q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCi[self.offset[p+1]-1]
-                        for q in range(q_min,j-1,-1):#(int q = j; q >= q_min; q--):
+                        # (int q = j; q >= q_min; q--):
+                        for q in range(q_min, j-1, -1):
                             if(q < j and not(self.allow_unpaired_position[q+1])):
-                                break;
+                                break
                             if(not(self.allow_paired[self.offset[p+1]+q])):
-                                continue;
-                            
+                                continue
+
                             if(p == i and q == j):
-                                score=score_helix + FCptr[q]
+                                score = score_helix + FCptr[q]
                             # score = (p == i && q == j) ?
                             else:
-                                score=score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q)
+                                score = score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(
+                                    p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q)
 
                             #     (score_helix + FCptr[q]) :
                             #     (score_other + cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +
                             #     ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q));
-                            
+
                                 sum_i = Fast_LogPlusEquals(sum_i, score)
-                        
-                            sum_i = Fast_LogPlusEquals(sum_i, FM2i + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
-                
-                            self.FCi[self.offset[i]+j] = sum_i;
+
+                            sum_i = Fast_LogPlusEquals(
+                                sum_i, FM2i + ScoreJunctionA(i, j) + ScoreMultiPaired() + ScoreMultiBase())
+
+                            self.FCi[self.offset[i]+j] = sum_i
                             if (0 < i and i+2 <= j and j < self.L):
                                 sum_i = NEG_INF
-                                
-                                #compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
-                                
-                                if (self.allow_paired[self.offset[i+1]+j]):
-                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j));
-                                
-                                #compute FM1[i+1,j] + b
-                                
-                                if (self.allow_unpaired_position[i+1]):
-                                    sum_i = Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1));
-                                
-                                self.FM1i[self.offset[i]+j] = sum_i;
-                            if ((0 < i) and (i+2 <= j) and (j < self.L)):
-                                
-                                sum_i = NEG_INF
-                                
-                                #compute SUM (i<k<j : FM1[i,k] + FM[k,j])
-                                
-                                sum_i = Fast_LogPlusEquals(sum_i, FM2i);
-                                
-                                #compute FM[i,j-1] + b
-                                
-                                if (self.allow_unpaired_position[j]):
-                                    sum_i = Fast_LogPlusEquals(sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j));
-                                
-                                #compute FM1[i,j]
-                                
-                                sum_i = Fast_LogPlusEquals(sum_i, self.FM1i[self.offset[i]+j]);
-                                
-                                self.FMi[self.offset[i]+j] = sum_i
-            self.F5i[0] = 0
-            for j in range(1,self.L+1):#(int j = 1; j <= L; j++)
-                
-                sum_i = NEG_INF;
-                
-                #compute F5[j-1] + ScoreExternalUnpaired()
-                
-                if (self.allow_unpaired_position[j]):
-                    sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j));
-                
-                #compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
-                
-                for k in range(0,j):
-                    if (self.allow_paired[self.offset[k+1]+j]):
-                        sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
-                
-                self.F5i[j] = sum_i;
 
-                
+                                # compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
+
+                                if (self.allow_paired[self.offset[i+1]+j]):
+                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(
+                                        j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j))
+
+                                # compute FM1[i+1,j] + b
+
+                                if (self.allow_unpaired_position[i+1]):
+                                    sum_i = Fast_LogPlusEquals(
+                                        sum_i, self.FM1i[self.offset[i+1]+j] + ScoreMultiUnpaired(i+1))
+
+                                self.FM1i[self.offset[i]+j] = sum_i
+                            if ((0 < i) and (i+2 <= j) and (j < self.L)):
+
+                                sum_i = NEG_INF
+
+                                # compute SUM (i<k<j : FM1[i,k] + FM[k,j])
+
+                                sum_i = Fast_LogPlusEquals(sum_i, FM2i)
+
+                                # compute FM[i,j-1] + b
+
+                                if (self.allow_unpaired_position[j]):
+                                    sum_i = Fast_LogPlusEquals(
+                                        sum_i, FMi[self.offset[i]+j-1] + ScoreMultiUnpaired(j))
+
+                                # compute FM1[i,j]
+
+                                sum_i = Fast_LogPlusEquals(
+                                    sum_i, self.FM1i[self.offset[i]+j])
+
+                                self.FMi[self.offset[i]+j] = sum_i
+        self.F5i[0] = 0
+        for j in range(1, self.L+1):  # (int j = 1; j <= L; j++)
+
+            sum_i = NEG_INF
+
+            # compute F5[j-1] + ScoreExternalUnpaired()
+
+            if (self.allow_unpaired_position[j]):
+                sum_i = Fast_LogPlusEquals(
+                    sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
+
+                # compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
+            print(f"banana: {j}")
+            for k in range(0, j):
+                if (self.allow_paired[self.offset[k+1]+j]):
+                    sum_i = Fast_LogPlusEquals(
+                        sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + ScoreBasePair(k+1, j) + ScoreJunctionA(j, k))
+
+            self.F5i[j] = sum_i
+
                 # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         # raise Exception("Not implemented")
 
-    def ComputeLogPartitionCoefficient(self): 
+    def ComputeLogPartitionCoefficient(self):
         raise Exception("Not implemented")
 
     def ComputeOutside(self):
-        self.F5o.clear(); self.F5o=[NEG_INF]*(self.L+1)
-        self.FCo.clear(); self.FCo=[NEG_INF]*self.SIZE
-        self.FMo.clear(); self.FMo=[NEG_INF]*self.SIZE
-        self.FM1o.clear(); self.FM1o=[NEG_INF]*self.SIZE
+        self.F5o.clear()
+        self.F5o = [NEG_INF]*(self.L+1)
+        self.FCo.clear()
+        self.FCo = [NEG_INF]*self.SIZE
+        self.FMo.clear()
+        self.FMo = [NEG_INF]*self.SIZE
+        self.FM1o.clear()
+        self.FM1o = [NEG_INF]*self.SIZE
         self.F5o[self.L] = 0
-        for j in range(self.L,0,-1):
+        for j in range(self.L, 0, -1):
             if self.allow_unpaired_position[j]:
-                self.F5o[j-1] = Fast_LogPlusEquals(self.F5o[j-1], self.F5o[j] + self.ScoreExternalUnpaired(j))
-        
+                self.F5o[j-1] = Fast_LogPlusEquals(
+                    self.F5o[j-1], self.F5o[j] + self.ScoreExternalUnpaired(j))
+
             for k in range(0, j):
                 if self.allow_paired[self.offset[k+1]+j]:
-                    temp = self.F5o[j] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k)
-                    self.F5o[k] = Fast_LogPlusEquals(self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
-                    self.FCo[self.offset[k+1]+j-1] = Fast_LogPlusEquals(self.FCo[self.offset[k+1]+j-1], temp + self.F5i[k])
+                    temp = self.F5o[j] + self.ScoreExternalPaired() + \
+                        ScoreBasePair(k+1, j) + ScoreJunctionA(j, k)
+                    self.F5o[k] = Fast_LogPlusEquals(
+                        self.F5o[k], temp + self.FCi[self.offset[k+1]+j-1])
+                    self.FCo[self.offset[k+1]+j-1] = Fast_LogPlusEquals(
+                        self.FCo[self.offset[k+1]+j-1], temp + self.F5i[k])
         for i in range(0, self.L+1):
             for j in range(self.L, i-1, -1):
                 FM2o = NEG_INF
-                if(i>0 and i+2<=j and j<self.L):
+                if(i > 0 and i+2 <= j and j < self.L):
                     FM2o = Fast_LogPlusEquals(FM2o, self.FMo[self.offset[i]+j])
-                
-                    # // compute FM[i,j-1] + b
-                    
-                    if self.allow_unpaired_position[j]:
-                        self.FMo[self.offset[i]+j-1] = Fast_LogPlusEquals(self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
-                    
-                    # // compute FM1[i,j]
-                    
-                    self.FM1o[self.offset[i]+j] = Fast_LogPlusEquals(self.FM1o[self.offset[i]+j], self.FMo[self.offset[i]+j])
 
-                    
+                    # // compute FM[i,j-1] + b
+
+                    if self.allow_unpaired_position[j]:
+                        self.FMo[self.offset[i]+j-1] = Fast_LogPlusEquals(
+                            self.FMo[self.offset[i]+j-1], self.FMo[self.offset[i]+j] + ScoreMultiUnpaired(j))
+
+                    # // compute FM1[i,j]
+
+                    self.FM1o[self.offset[i]+j] = Fast_LogPlusEquals(
+                        self.FM1o[self.offset[i]+j], self.FMo[self.offset[i]+j])
+
                 if (0 < i and i+2 <= j and j < self.L):
-                # // compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
-                
+                    # // compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
+
                     if (self.allow_paired[self.offset[i+1]+j]):
-                        self.FCo[self.offset[i+1]+j-1] = Fast_LogPlusEquals(self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j))
-                    
+                        self.FCo[self.offset[i+1]+j-1] = Fast_LogPlusEquals(
+                            self.FCo[self.offset[i+1]+j-1], self.FM1o[self.offset[i]+j] + ScoreJunctionA(j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j))
+
                     # // compute FM1[i+1,j] + b
-                    
+
                     if (self.allow_unpaired_position[i+1]):
-                        self.FM1o[self.offset[i+1]+j] = Fast_LogPlusEquals(self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
-                
+                        self.FM1o[self.offset[i+1]+j] = Fast_LogPlusEquals(
+                            self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + ScoreMultiUnpaired(i+1))
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-                    score_helix = self.FCo[offset[i]+j] + ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1)  if (i+2 <= j) else 0
-                    score_other = self.FCo[self.offset[i]+j] + ScoreJunctionB(i,j);
-                    
-                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH,j)+1):
+                    score_helix = self.FCo[offset[i]+j] + ScoreBasePair(
+                        i+1, j) + ScoreHelixStacking(i, j+1) if (i+2 <= j) else 0
+                    score_other = self.FCo[self.offset[i] +
+                                           j] + ScoreJunctionB(i, j)
+
+                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
                         if (p > i and not allow_unpaired_position[p]):
                             break
-                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH)
+                        q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCo[self.offset[p+1]-1]
                         for q in range(j, q_min-1, -1):
                             if (q < j and not self.allow_unpaired_position[q+1]):
                                 break
                             if (not self.allow_paired[self.offset[p+1]+q]):
-                                continue;
-                            FCptr[q] = Fast_LogPlusEquals(FCptr[q], 
-                                            score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1,q) + ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q))
-                    FM2o = Fast_LogPlusEquals(FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i,j) + ScoreMultiPaired() + ScoreMultiBase());
-                
+                                continue
+                            FCptr[q] = Fast_LogPlusEquals(FCptr[q],
+                                                          score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q))
+                    FM2o = Fast_LogPlusEquals(
+                        FM2o, self.FCo[self.offset[i]+j] + ScoreJunctionA(i, j) + ScoreMultiPaired() + ScoreMultiBase())
 
-                
                 if i+2 <= j:
                     p1i = self.FM1i[self.offset[i]+i+1]
                     p2i = self.FMi[self.offset[i+1]+j]
@@ -774,11 +813,11 @@ class InferenceEngine:
                     for k in range(i+1, j):
                         p1o = Fast_LogPlusEquals(p1o, FM2o + p2i)
                         p2o = Fast_LogPlusEquals(p2o, FM2o + p1i)
-                        p1i+=1
-                        p1o+=1
+                        p1i += 1
+                        p1o += 1
                         p2i += L-k
                         p2o += L-k
-        
+
         raise Exception("Not implemented")
 
     def ComputeFeatureCountExpectations(self):
@@ -798,49 +837,54 @@ class InferenceEngine:
                     p2 = self.FMi[self.offset[i+1]+j]
                     for k in range(i+1, j):
                         Fast_LogPlusEquals(FM2i, p1 + p2)
-                        p1+=1
-                        p2 += L-k;
-                
-                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-                    
-                    outside = self.FCo[self.offset[i]+j] - Z;
-                    
-                    # // compute ScoreHairpin(i,j)
-                    
-                    if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        CountHairpin(i,j,Fast_Exp(outside + ScoreHairpin(i,j)))
+                        p1 += 1
+                        p2 += L-k
 
-                    score_helix = outside + ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) if (i+2 <= j) else 0
-                    score_other = outside + ScoreJunctionB(i,j);
-                    
-                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH,j)+1):
+                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
+
+                    outside = self.FCo[self.offset[i]+j] - Z
+
+                    # // compute ScoreHairpin(i,j)
+
+                    if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
+                        CountHairpin(i, j, Fast_Exp(
+                            outside + ScoreHairpin(i, j)))
+
+                    score_helix = outside + \
+                        ScoreBasePair(i+1, j) + ScoreHelixStacking(i,
+                                                                   j+1) if (i+2 <= j) else 0
+                    score_other = outside + ScoreJunctionB(i, j)
+
+                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
                         if (p > i and not self.allow_unpaired_position[p]):
-                             break;
-                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH)
+                            break
+                        q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCi[self.offset[p+1]-1]
                         for q in range(j, q_min-1, -1):
                             if (q < j and not allow_unpaired_position[q+1]):
-                                break;
+                                break
                             if (not self.allow_paired[offset[p+1]+q]):
                                 continue
-                            
-                            self.posterior[self.offset[p+1]+q] += Fast_Exp( score_helix + FCptr[q]  if(p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + ScoreBasePair(p+1,q) + ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q))
-        
+
+                            self.posterior[self.offset[p+1]+q] += Fast_Exp(score_helix + FCptr[q] if(p == i and q == j) else score_other + self.cache_score_single[p-i]
+                                                                           [j-q][0] + FCptr[q] + ScoreBasePair(p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q))
+
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
-                        self.posterior[offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j) - Z);
+                        self.posterior[offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(
+                            j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j) - Z)
 
         for j in range(1, self.L+1):
-            outside = self.F5o[j] - Z;
+            outside = self.F5o[j] - Z
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
-                    self.posterior[self.offset[k+1]+j] += Fast_Exp(outside + F5i[k] + FCi[offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
-
+                    self.posterior[self.offset[k+1]+j] += Fast_Exp(
+                        outside + F5i[k] + FCi[offset[k+1]+j-1] + self.ScoreExternalPaired() + ScoreBasePair(k+1, j) + ScoreJunctionA(j, k))
 
         for i in range(1, self.L+1):
             for j in range(i+1, self.L+1):
-                self.posterior[self.offset[i]+j] = Clip(self.posterior[self.offset[i]+j], 0, 1)
-
+                self.posterior[self.offset[i] +
+                               j] = Clip(self.posterior[self.offset[i]+j], 0, 1)
 
         # raise Exception("Not implemented")
 
@@ -978,12 +1022,13 @@ class InferenceEngine:
         self.score_paired_position[which_data].clear()
 
         for i in range(0, self.L):
-            score_unpaired = 0  if self.score_unpaired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(self.score_unpaired_position_raw[which_data][i],which_data,1,self.s[i+1])
+            score_unpaired = 0 if self.score_unpaired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(
+                self.score_unpaired_position_raw[which_data][i], which_data, 1, self.s[i+1])
             self.score_unpaired_position[which_data].append(score_unpaired)
 
-            score_paired = 0 if self.score_paired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(score_paired_position_raw[which_data][i],which_data,0,s[i+1])
+            score_paired = 0 if self.score_paired_position_raw[which_data][i] == SStruct.UNKNOWN_POTENTIAL else self.LogGammaProb(
+                score_paired_position_raw[which_data][i], which_data, 0, s[i+1])
             self.score_paired_position[which_data].append(score_paired)
-        
 
     def UpdateEvidenceStructures(self):
         for i in range(0, self.num_data_sources):
