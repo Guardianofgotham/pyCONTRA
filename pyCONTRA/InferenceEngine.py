@@ -5,6 +5,7 @@ from pyCONTRA.ParameterManager import *
 import array as arr
 from queue import Queue
 import sys
+import math
 
 
 class InferenceEngine:
@@ -57,6 +58,10 @@ class InferenceEngine:
 
         self.score_terminal_mismatch = list()
         self.score_internal_explicit = list()
+        for i in range(D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
+            self.score_internal_explicit.append([])
+            for j in range(D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
+                self.score_internal_explicit[-1].append((0, 0))
         self.score_internal_1x1_nucleotides = list()
         self.score_helix_stacking = list()
         self.score_helix_closing = list()
@@ -89,32 +94,99 @@ class InferenceEngine:
                         # self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
                         self.score_helix_stacking[-1][-1][-1].append((0, 0))
 
-        self.cache_score_hairpin_length = [0]*(D_MAX_HAIRPIN_LENGTH+1)
+        self.cache_score_hairpin_length = []
         self.score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
-        self.score_bulge_length_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
-        self.score_internal_length_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_bulge_length_at_least = []
+        self.score_internal_length_at_least = []
         self.score_internal_symmetric_length_at_least = [
             0]*(D_MAX_BULGE_LENGTH+1)
         self.score_bulge_0x1_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
         self.score_bulge_1x0_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
-        self.score_internal_asymmetry_at_least = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_internal_asymmetry_at_least = []
         self.score_multi_base = None
         self.score_multi_unpaired = None
         self.score_multi_paired = None
         self.score_external_unpaired = None
         self.score_external_paired = None
         self.log_score_evidence = None
-        self.cache_score_single = None
+        self.cache_score_single = []
+        for i in range(C_MAX_SINGLE_LENGTH+1):
+            self.cache_score_single.append([])
+            for j in range(C_MAX_SINGLE_LENGTH+1):
+                self.cache_score_single[-1].append((0, 0))
         self.cache_score_helix_sums = []
+        self.posterior = []
+        self.score_hairpin_length_at_least = []
+        for i in range(D_MAX_HAIRPIN_LENGTH+1):
+            self.score_hairpin_length_at_least.append((0, 0))
+            self.cache_score_hairpin_length.append((0, 0))
+            self.score_bulge_length_at_least.append((0, 0))
+            self.score_internal_length_at_least.append((0, 0))
+            self.score_internal_asymmetry_at_least.append((0, 0))
 
     def InitializeCache(self):
         if self.cache_initialized:
             return
         self.cache_initialized=True
 
+        #if PARAMS_HAIRPIN_LENGTH
+        self.cache_score_hairpin_length[0] = (self.score_hairpin_length_at_least[0][0], self.cache_score_hairpin_length[0][1])
+        for i in range(1, D_MAX_HAIRPIN_LENGTH+1):
+            self.cache_score_hairpin_length[i] = (self.cache_score_hairpin_length[i-1][0] + self.score_hairpin_length_at_least[i][0], self.cache_score_hairpin_length[i][1])
 
-    def FillScores(self):
-        raise Exception("Not implemented")
+        #if PARAMS_BULGE_LENGTH
+        temp_cache_score_bulge_length = [0]*(D_MAX_BULGE_LENGTH+1)
+        temp_cache_score_bulge_length[0] = self.score_bulge_length_at_least[0][0]
+        for i in range(1, D_MAX_BULGE_LENGTH+1):
+            temp_cache_score_bulge_length[i] = temp_cache_score_bulge_length[i-1] + self.score_bulge_length_at_least[i][0]
+        
+        #if PARAMS_INTERNAL_LENGTH
+        temp_cache_score_internal_length = [0]*(D_MAX_INTERNAL_LENGTH+1)
+        temp_cache_score_internal_length[0] = self.score_internal_length_at_least[0][0]
+        for i in range(1, D_MAX_INTERNAL_LENGTH+1):
+            temp_cache_score_internal_length[i] = temp_cache_score_internal_length[i-1] + self.score_internal_length_at_least[i][0]
+
+        #if PARAMS_INTERNAL_SYMMETRY
+        temp_cache_score_internal_symmetric_length = [0]*(D_MAX_INTERNAL_SYMMETRIC_LENGTH+1)
+        temp_cache_score_internal_symmetric_length[0] = self.score_internal_symmetric_length_at_least[0][0];
+        for i in range(1, D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
+            temp_cache_score_internal_symmetric_length[i] = temp_cache_score_internal_symmetric_length[i-1] + self.score_internal_symmetric_length_at_least[i]
+        
+        #if PARAMS_INTERNAL_ASYMMETRY
+        temp_cache_score_internal_asymmetry = [0]*(D_MAX_INTERNAL_ASYMMETRY+1)
+        temp_cache_score_internal_asymmetry[0] = self.score_internal_asymmetry_at_least[0][0]
+        for i in range(1, D_MAX_INTERNAL_ASYMMETRY+1):
+            temp_cache_score_internal_asymmetry[i] = temp_cache_score_internal_asymmetry[i-1] + self.score_internal_asymmetry_at_least[i][0]
+
+        for l1 in range(0, C_MAX_SINGLE_LENGTH+1):
+            for l2 in range(0, C_MAX_SINGLE_LENGTH-l1+1):
+                self.cache_score_single[l1][l2] = (0, self.cache_score_single[l1][l2][1])
+                if (l1 == 0 and l2 == 0):
+                     continue;
+                if (l1 == 0 or l2 == 0):
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_bulge_length[min(D_MAX_BULGE_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
+                else:
+                    if (l1 <= D_MAX_INTERNAL_EXPLICIT_LENGTH and l2 <= D_MAX_INTERNAL_EXPLICIT_LENGTH):
+                        self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+self.score_internal_explicit[l1][l2][0],self.cache_score_single[l1][l2][1])
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_length[min(D_MAX_INTERNAL_LENGTH, l1+l2)], self.cache_score_single[l1][l2][1])
+                    if (l1 == l2):
+                        self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_symmetric_length[min(D_MAX_INTERNAL_SYMMETRIC_LENGTH, l1)], self.cache_score_single[l1][l2][1])
+                    self.cache_score_single[l1][l2] = (self.cache_score_single[l1][l2][0]+temp_cache_score_internal_asymmetry[min(D_MAX_INTERNAL_ASYMMETRY, abs(l1-l2))],self.cache_score_single[l1][l2][1])
+
+
+        self.FillScores(self.cache_score_helix_sums, 0, len(self.cache_score_helix_sums), 0)
+        for i in range(self.L, 0, -1):
+            for j in range(i+3, self.L+1):
+                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i-2], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                if (self.allow_paired[self.offset[i+1]+j-1]):
+                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*L+j-i][0]+ScoreBasePair(i+1,j-1),self.cache_score_helix_sums[(i+j)*L+j-i][1])
+                    if (self.allow_paired[self.offset[i]+j]):
+                        self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*L+j-i][0]+ScoreHelixStacking(i,j), self.cache_score_helix_sums[(i+j)*L+j-i][1])
+
+        
+    def FillScores(self,container: list,begin: int, end: int, value: float):
+        for i in range(begin, end):
+            container[i] = (value, container[i][1])
 
     def FillCounts(self):
         raise Exception("Not implemented")
