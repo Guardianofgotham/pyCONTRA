@@ -107,6 +107,12 @@ class InferenceEngine:
         self.cache_score_single = None
         self.cache_score_helix_sums = []
 
+    def InitializeCache(self):
+        if self.cache_initialized:
+            return
+        self.cache_initialized=True
+
+
     def FillScores(self):
         raise Exception("Not implemented")
 
@@ -699,7 +705,64 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def ComputePosterior(self):
-        raise Exception("Not implemented")
+        self.posterior.clear()
+        self.posterior = [0]*self.SIZE
+        Z = ComputeLogPartitionCoefficient()
+
+        for i in range(L, -1, -1):
+            for j in range(i, self.L+1):
+                FM2i = NEG_INF
+
+                if i + 2 <= j:
+                    p1 = self.FM1i[self.offset[i]+i+1]
+                    p2 = self.FMi[self.offset[i+1]+j]
+                    for k in range(i+1, j):
+                        Fast_LogPlusEquals(FM2i, p1 + p2)
+                        p1+=1
+                        p2 += L-k;
+                
+                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
+                    
+                    outside = self.FCo[self.offset[i]+j] - Z;
+                    
+                    # // compute ScoreHairpin(i,j)
+                    
+                    if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
+                        CountHairpin(i,j,Fast_Exp(outside + ScoreHairpin(i,j)))
+
+                    score_helix = outside + ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) if (i+2 <= j) else 0
+                    score_other = outside + ScoreJunctionB(i,j);
+                    
+                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH,j)+1):
+                        if (p > i and not self.allow_unpaired_position[p]):
+                             break;
+                        q_min = max(p+2,p-i+j-C_MAX_SINGLE_LENGTH)
+                        FCptr = self.FCi[self.offset[p+1]-1]
+                        for q in range(j, q_min-1, -1):
+                            if (q < j and not allow_unpaired_position[q+1]):
+                                break;
+                            if (not self.allow_paired[offset[p+1]+q]):
+                                continue
+                            
+                            self.posterior[self.offset[p+1]+q] += Fast_Exp( score_helix + FCptr[q]  if(p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + ScoreBasePair(p+1,q) + ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q))
+        
+                if (0 < i and i+2 <= j and j < self.L):
+                    if (self.allow_paired[self.offset[i+1]+j]):
+                        self.posterior[offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(j,i) + ScoreMultiPaired() + ScoreBasePair(i+1,j) - Z);
+
+        for j in range(1, self.L+1):
+            outside = self.F5o[j] - Z;
+            for k in range(0, j):
+                if (self.allow_paired[self.offset[k+1]+j]):
+                    self.posterior[self.offset[k+1]+j] += Fast_Exp(outside + F5i[k] + FCi[offset[k+1]+j-1] + ScoreExternalPaired() + ScoreBasePair(k+1,j) + ScoreJunctionA(j,k));
+
+
+        for i in range(1, self.L+1):
+            for j in range(i+1, self.L+1):
+                self.posterior[self.offset[i]+j] = Clip(self.posterior[self.offset[i]+j], 0, 1)
+
+
+        # raise Exception("Not implemented")
 
     def PredictPairingsPosterior(self,   gamma: int):
         if(not(gamma > 0)):
