@@ -632,9 +632,11 @@ class InferenceEngine:
         self.FCi = [NEG_INF]*(self.SIZE)
         self.FMi = [NEG_INF]*(self.SIZE)
         self.FM1i = [NEG_INF]*(self.SIZE)
-
+        print(self.L)
         for i in range(self.L, -1, -1):  # (int i = L; i >= 0; i--)
+            print(i)
             for j in range(i, self.L+1):  # (int j = i; j <= L; j++
+                #print(i,j)
 
                 FM2i = NEG_INF
                 if (i+2 <= j):
@@ -645,9 +647,9 @@ class InferenceEngine:
                         FM2i = Fast_LogPlusEquals(FM2i, (p1) + (p2))
                         p1 += 1
                         p2 += self.L-k
-
-                if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-
+                #print(self.allow_paired[self.offset[i]+j+1])
+                if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
+                    #print(i,j)
                     sum_i = (NEG_INF)
 
                     # compute ScoreHairpin(i,j)
@@ -666,20 +668,21 @@ class InferenceEngine:
 
                     # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
                     for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
-
+                        print(i,j,p)
                         if (p > i and not(self.allow_unpaired_position[p])):
                             break
 
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCi[self.offset[p+1]-1]
                         # (int q = j; q >= q_min; q--):
-                        for q in range(q_min, j-1, -1):
+                        for q in range(j, q_min-1, -1):
+                            print(i,j,p,q)
                             if(q < j and not(self.allow_unpaired_position[q+1])):
                                 break
                             if(not(self.allow_paired[self.offset[p+1]+q])):
                                 continue
 
-                            if(p == i and q == j):
+                            if((p == i) and (q == j)):
                                 score = score_helix + FCptr[q]
                             # score = (p == i && q == j) ?
                             else:
@@ -724,7 +727,7 @@ class InferenceEngine:
 
                                 if (self.allow_unpaired_position[j]):
                                     sum_i = Fast_LogPlusEquals(
-                                        sum_i, FMi[self.offset[i]+j-1] + self.ScoreMultiUnpaired(j))
+                                        sum_i, self.FMi[self.offset[i]+j-1] + self.ScoreMultiUnpaired(j))
 
                                 # compute FM1[i,j]
 
@@ -1058,3 +1061,9 @@ class InferenceEngine:
     def UpdateEvidenceStructures(self):
         for i in range(0, self.num_data_sources):
             UpdateEvidenceStructuresK(i)
+    
+    def ScoreJunctionA(self, i: int, j: int):
+        if(not(0<i and i<=self.L and 0<=j and j<self.L)):
+            print("Invalid Indices")
+        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]].first #complete this function
+
