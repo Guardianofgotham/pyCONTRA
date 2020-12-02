@@ -19,6 +19,14 @@ class InferenceEngine:
         self.is_complementary = []
         for i in range(M+1):
             self.is_complementary.append([0]*(M+1))
+        self.BYTE = {"A": 0, "U": 3, "C": 1, "G": 2}
+        self.is_complementary[self.BYTE["A"]][self.BYTE["U"]] =1
+        self.is_complementary[self.BYTE["U"]][self.BYTE["A"]] =1
+        self.is_complementary[self.BYTE["G"]][self.BYTE["U"]] =1
+        self.is_complementary[self.BYTE["U"]][self.BYTE["G"]] =1
+        self.is_complementary[self.BYTE["C"]][self.BYTE["G"]] =1
+        self.is_complementary[self.BYTE["G"]][self.BYTE["C"]] =1
+
         self.cache_initialized = False
         self.parameter_manager = None
         self.num_data_sources = num_data_sources
@@ -90,7 +98,7 @@ class InferenceEngine:
                     self.score_helix_stacking[-1][-1].append([])
                     self.score_dangle_left[-1][-1].append([])
                     self.score_dangle_right[-1][-1].append([])
-                    for l in range(M+1):
+                    for self.L in range(M+1):
                         self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
                         # self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
                         self.score_helix_stacking[-1][-1][-1].append((0, 0))
@@ -195,10 +203,10 @@ class InferenceEngine:
                     i+j)*self.L+j-i-2], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                 if (self.allow_paired[self.offset[i+1]+j-1]):
                     self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
-                        i+j)*L+j-i][0]+ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*L+j-i][1])
+                        i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                     if (self.allow_paired[self.offset[i]+j]):
                         self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
-                            i+j)*L+j-i][0]+ScoreHelixStacking(i, j), self.cache_score_helix_sums[(i+j)*L+j-i][1])
+                            i+j)*self.L+j-i][0]+self.ScoreHelixStacking(i, j), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
 
     def FillScores(self, container: list, begin: int, end: int, value: float):
         for i in range(begin, end):
@@ -222,11 +230,11 @@ class InferenceEngine:
         return 0
 
     def ScoreJunctionB(self, i: int, j: int):
-        assert 0 < i and i < L and 0 < j and j < L, "Invalid indices."
+        assert 0 < i and i < self.L and 0 < j and j < self.L, "Invalid indices."
         return 0
 
     def ScoreBasePair(self, i: int,  j: int):
-        assert 0 < i and i <= L and 0 < j and j <= L and i != j, "Invalid base-pair"
+        assert 0 < i and i <= self.L and 0 < j and j <= self.L and i != j, "Invalid base-pair"
         return 0
 
     def ScoreUnpaired(i, j):
@@ -240,10 +248,12 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def ScoreSingleNucleotides(self, i: int,  j: int, p: int, q: int):
-        assert(0 < i and i <= p and p + 2 <= q and q <= j and j < self.L, "Single-branch loop boundaries invalid.")
+        assert(0 < i and i <= p and p + 2 <= q and q <= j and j <
+               self.L, "Single-branch loop boundaries invalid.")
         l1 = p - i
         l2 = j - q
-        assert (l1 + l2 > 0 and l1 >= 0 and l2 >= 0 and l1 + l2 <= C_MAX_SINGLE_LENGTH, "Invalid single-branch loop size.");
+        assert (l1 + l2 > 0 and l1 >= 0 and l2 >= 0 and l1 + l2 <=
+                C_MAX_SINGLE_LENGTH, "Invalid single-branch loop size.")
         return self.ScoreUnpaired(i, p) + self.ScoreUnpaired(q, j)
         # raise Exception("Not implemented")
 
@@ -517,7 +527,7 @@ class InferenceEngine:
         sequence = sstruct.GetSequences()[0]
         self.s[0] = len(alphabet)
         for i in range(1, self.L+1):
-            self.s[i] = self.char_mapping[ord(sequence[i])]
+            self.s[i] = self.BYTE[(sequence[i])]
 
         for i in range(0, self.L):
             self.offset[i] = self.ComputeRowOffset(i, self.L+1)
@@ -530,14 +540,20 @@ class InferenceEngine:
             self.loss_unpaired[i] = 0
             self.loss_paired[i] = 0
 
+        print(f"SUM allow_paired_0: {sum(self.allow_paired)}")
         for i in range(0, self.L+1):
             self.allow_paired[self.offset[0]+i] = 0
             self.allow_paired[self.offset[i]+i] = 0
+        
+        print(f"SUM allow_paired_1: {sum(self.allow_paired)}")
         if not self.allow_noncomplementary:
             for i in range(1, self.L+1):
-                for j in range(1, self.L+1):
+                for j in range(i+1, self.L+1):
                     if not self.IsComplementary(i, j):
                         self.allow_paired[self.offset[i]+j] = 0
+        print(f"SUM allow_paired_2: {sum(self.allow_paired)}")
+        # exit(255)
+        
         for i in range(0, self.num_data_sources):
             self.score_unpaired_position_raw[i].clear()
             self.score_unpaired_position[i].clear()
@@ -611,7 +627,7 @@ class InferenceEngine:
         return self.score_external_paired[0]
     # MEA inference
 
-    def ScoreHelixStacking(self, i,j):
+    def ScoreHelixStacking(self, i, j):
         return 0
 
     def ScoreMultiPaired(self):
@@ -633,13 +649,15 @@ class InferenceEngine:
         self.FMi = [NEG_INF]*(self.SIZE)
         self.FM1i = [NEG_INF]*(self.SIZE)
         print(self.L)
-        for i in range(self.L, -1, -1):  # (int i = L; i >= 0; i--)
-            print(i)
-            for j in range(i, self.L+1):  # (int j = i; j <= L; j++
-                #print(i,j)
+        print(f"SUM allow_paired: {sum(self.allow_paired)}")
+        for i in range(self.L, -1, -1):  # (int i = self.L; i >= 0; i--)
+            # print(i)
+            for j in range(i, self.L+1):  # (int j = i; j <= self.L; j++
+                # print(i,j)
 
                 FM2i = NEG_INF
                 if (i+2 <= j):
+                    # print(f"Innfer IF {i} {j}")
                     p1 = self.FM1i[self.offset[i]+i+1]
                     p2 = self.FMi[self.offset[i+1]+j]
                     for k in range(i+1, j):  # (register int k = i+1; k < j; k++)
@@ -647,15 +665,17 @@ class InferenceEngine:
                         FM2i = Fast_LogPlusEquals(FM2i, (p1) + (p2))
                         p1 += 1
                         p2 += self.L-k
-                #print(self.allow_paired[self.offset[i]+j+1])
+                # print(self.allow_paired[self.offset[i]+j+1])
                 if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
-                    #print(i,j)
+                    raise Exception(f"If Executed i: {i} j: {j}")
+                    # print(i,j)
                     sum_i = (NEG_INF)
 
                     # compute ScoreHairpin(i,j)
 
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        sum_i = Fast_LogPlusEquals(sum_i, self.ScoreHairpin(i, j))
+                        sum_i = Fast_LogPlusEquals(
+                            sum_i, self.ScoreHairpin(i, j))
 
                     score_helix = 0
                     # score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
@@ -668,7 +688,7 @@ class InferenceEngine:
 
                     # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
                     for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
-                        print(i,j,p)
+                        print(i, j, p)
                         if (p > i and not(self.allow_unpaired_position[p])):
                             break
 
@@ -676,7 +696,7 @@ class InferenceEngine:
                         FCptr = self.FCi[self.offset[p+1]-1]
                         # (int q = j; q >= q_min; q--):
                         for q in range(j, q_min-1, -1):
-                            print(i,j,p,q)
+                            print(i, j, p, q)
                             if(q < j and not(self.allow_unpaired_position[q+1])):
                                 break
                             if(not(self.allow_paired[self.offset[p+1]+q])):
@@ -736,7 +756,7 @@ class InferenceEngine:
 
                                 self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
-        for j in range(1, self.L+1):  # (int j = 1; j <= L; j++)
+        for j in range(1, self.L+1):  # (int j = 1; j <= self.L; j++)
 
             sum_i = NEG_INF
 
@@ -755,7 +775,7 @@ class InferenceEngine:
 
             self.F5i[j] = sum_i
 
-                # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
+            # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         # raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
@@ -845,8 +865,8 @@ class InferenceEngine:
                         p2o = Fast_LogPlusEquals(p2o, FM2o + p1i)
                         p1i += 1
                         p1o += 1
-                        p2i += L-k
-                        p2o += L-k
+                        p2i += self.L-k
+                        p2o += self.L-k
 
     def ComputeFeatureCountExpectations(self):
         raise Exception("Not implemented")
@@ -866,7 +886,7 @@ class InferenceEngine:
                     for k in range(i+1, j):
                         Fast_LogPlusEquals(FM2i, p1 + p2)
                         p1 += 1
-                        p2 += L-k
+                        p2 += self.L-k
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
 
@@ -880,7 +900,7 @@ class InferenceEngine:
 
                     score_helix = outside + \
                         ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
-                                                                   j+1) if (i+2 <= j) else 0
+                                                                        j+1) if (i+2 <= j) else 0
                     score_other = outside + ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
@@ -1061,9 +1081,9 @@ class InferenceEngine:
     def UpdateEvidenceStructures(self):
         for i in range(0, self.num_data_sources):
             UpdateEvidenceStructuresK(i)
-    
-    def ScoreJunctionA(self, i: int, j: int):
-        if(not(0<i and i<=self.L and 0<=j and j<self.L)):
-            print("Invalid Indices")
-        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]].first #complete this function
 
+    def ScoreJunctionA(self, i: int, j: int):
+        if(not(0 < i and i <= self.L and 0 <= j and j < self.L)):
+            print("Invalid Indices")
+        # complete this function
+        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]].first
