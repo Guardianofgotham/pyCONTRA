@@ -89,7 +89,7 @@ class InferenceEngine:
                 self.score_internal_explicit[-1].append([])
                 self.score_internal_1x1_nucleotides[-1].append(None)
                 self.score_helix_stacking[-1].append([])
-                self.score_helix_closing[-1].append([])
+                self.score_helix_closing[-1].append((0, 0))
                 self.score_dangle_left[-1].append([])
                 self.score_dangle_right[-1].append([])
                 for k in range(M+1):
@@ -275,7 +275,7 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def CountHairpin(self, i: int, j: int,  value):
-        raise Exception("Not implemented")
+        self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)] = (self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][0], self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][1]+value)
 
     def CountHelix(self, i: int,  j: int,  m: int, value):
         raise Exception("Not implemented")
@@ -730,8 +730,8 @@ class InferenceEngine:
                                 # compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
 
                                 if (self.allow_paired[self.offset[i+1]+j]):
-                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(
-                                        j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j))
+                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
+                                        j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j))
 
                                 # compute FM1[i+1,j] + b
 
@@ -772,7 +772,7 @@ class InferenceEngine:
                     sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
 
                 # compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
-            print(f"banana: {j}")
+            # print(f"banana: {j}")
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     sum_i = Fast_LogPlusEquals(
@@ -840,23 +840,23 @@ class InferenceEngine:
                             self.FM1o[self.offset[i+1]+j], self.FM1o[self.offset[i]+j] + self.ScoreMultiUnpaired(i+1))
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
-                    score_helix = self.FCo[offset[i]+j] + self.ScoreBasePair(
+                    score_helix = self.FCo[self.offset[i]+j] + self.ScoreBasePair(
                         i+1, j) + self.ScoreHelixStacking(i, j+1) if (i+2 <= j) else 0
                     score_other = self.FCo[self.offset[i] +
                                            j] + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
-                        if (p > i and not allow_unpaired_position[p]):
+                        if (p > i and not self.allow_unpaired_position[p]):
                             break
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
-                        FCptr = self.FCo[self.offset[p+1]-1]
+                        FCptr = self.FCo[self.offset[p+1]-1:]
                         for q in range(j, q_min-1, -1):
                             if (q < j and not self.allow_unpaired_position[q+1]):
                                 break
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
                             FCptr[q] = Fast_LogPlusEquals(FCptr[q],
-                                                          score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + ScoreBasePair(p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q))
+                                                          score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
                     FM2o = Fast_LogPlusEquals(
                         FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
@@ -879,9 +879,9 @@ class InferenceEngine:
     def ComputePosterior(self):
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
-        Z = ComputeLogPartitionCoefficient()
+        Z = self.ComputeLogPartitionCoefficient()
 
-        for i in range(L, -1, -1):
+        for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
                 FM2i = NEG_INF
 
@@ -900,39 +900,39 @@ class InferenceEngine:
                     # // compute ScoreHairpin(i,j)
 
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
-                        CountHairpin(i, j, Fast_Exp(
-                            outside + ScoreHairpin(i, j)))
+                        self.CountHairpin(i, j, Fast_Exp(
+                            outside + self.ScoreHairpin(i, j)))
 
                     score_helix = outside + \
-                        ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
+                        self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
                                                                         j+1) if (i+2 <= j) else 0
-                    score_other = outside + ScoreJunctionB(i, j)
+                    score_other = outside + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
                         if (p > i and not self.allow_unpaired_position[p]):
                             break
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
-                        FCptr = self.FCi[self.offset[p+1]-1]
+                        FCptr = self.FCi[self.offset[p+1]-1:]
                         for q in range(j, q_min-1, -1):
-                            if (q < j and not allow_unpaired_position[q+1]):
+                            if (q < j and not self.allow_unpaired_position[q+1]):
                                 break
-                            if (not self.allow_paired[offset[p+1]+q]):
+                            if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
 
                             self.posterior[self.offset[p+1]+q] += Fast_Exp(score_helix + FCptr[q] if(p == i and q == j) else score_other + self.cache_score_single[p-i]
-                                                                           [j-q][0] + FCptr[q] + ScoreBasePair(p+1, q) + ScoreJunctionB(q, p) + ScoreSingleNucleotides(i, j, p, q))
+                                                                           [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
 
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
-                        self.posterior[offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + ScoreJunctionA(
-                            j, i) + ScoreMultiPaired() + ScoreBasePair(i+1, j) - Z)
+                        self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
+                            j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j) - Z)
 
         for j in range(1, self.L+1):
             outside = self.F5o[j] - Z
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     self.posterior[self.offset[k+1]+j] += Fast_Exp(
-                        outside + F5i[k] + FCi[offset[k+1]+j-1] + self.ScoreExternalPaired() + ScoreBasePair(k+1, j) + ScoreJunctionA(j, k))
+                        outside + self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
 
         for i in range(1, self.L+1):
             for j in range(i+1, self.L+1):
@@ -944,12 +944,12 @@ class InferenceEngine:
     def PredictPairingsPosterior(self,   gamma: int):
         if(not(gamma > 0)):
             print("Non-negative gamma expected.")
-        unpaired_posterior = []
+        unpaired_posterior = [0]*(self.L+1)
         score = []
         traceback = []
 
         for i in range(1, self.L+1):
-            unpaired_posterior.append(1)
+            unpaired_posterior[i] = 1
             for j in range(i):
                 unpaired_posterior[i] -= self.posterior[self.offset[j]+i]
             for j in range(i+1, self.L+1):
@@ -1091,5 +1091,6 @@ class InferenceEngine:
         if(not(0 < i and i <= self.L and 0 <= j and j < self.L)):
             print("Invalid Indices")
         # complete this function
-        print(self.s[i],self.s[j+1], len(self.score_helix_closing[self.s[i]]))
+        # print(self.s[i],self.s[j+1], len(self.score_helix_closing[self.s[i]]))
+        # print(f"i: {i}, j+1: {j+1}, s[i]: {self.s[i]}, s[j+1]: {self.s[j+1]}, shc[s[i]]: {self.score_helix_closing[self.s[i]]}")
         return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]][0]
