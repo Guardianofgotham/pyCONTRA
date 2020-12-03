@@ -86,7 +86,6 @@ class SStruct:
         self.names = list()
         self.sequences = list()
         self.mapping = list()
-
         try:
             data = open(filename).readlines()
         except:
@@ -94,6 +93,7 @@ class SStruct:
 
         for i in data:
             s = i.strip()
+            print(s)
             if(len(s) == 0):
                 continue
             if(s[0] == ">"):
@@ -252,20 +252,21 @@ class SStruct:
         assert parens[0] == "@", "Invalid parenthesized string."
         for i in range(1, len(parens)):
             if(parens[i] == "?"):
-                break
+                pass
+                # break
             elif(parens[i] == "."):
                 mapping[i] = UNPAIRED
-                break
+                # break
             elif(parens[i] == "("):
                 stack.append(i)
-                break
+                # break
             elif(parens[i] == ")"):
                 if(len(stack) == 0):
                     raise Exception("Parenthesis mismatch.")
                 mapping[i] = stack[-1]
                 mapping[stack[-1]] = i
                 stack.pop(-1)
-                break
+                # break
             else:
                 raise Exception(
                     "Unexpected character {} in parenthesized structure.".format(parens[i]))
@@ -290,6 +291,30 @@ class SStruct:
                 parens += ")"
             else:
                 raise Exception("Invalid structure.")
+    
+    def ConvertMappingToParens(self, mapping):
+        print(mapping)
+        parens = "@"
+        for i in range(1, len(mapping)):
+            if(mapping[i]==SStruct.UNKNOWN):
+                parens+="?"
+            elif (mapping[i] == SStruct.UNPAIRED):
+                parens += ".";
+            elif (mapping[i] > i):
+                parens += "(";
+            elif (mapping[i] < i):
+                parens += ")";
+            else:
+                raise Exception("Invalid structure.")
+        return parens
+
+    def WriteParens(self):
+        for k in range(0, len(self.sequences)):
+            print(f">{self.names[k]}")
+            print(f"{self.sequences[k][1:]}")
+        
+        print(f">structure")
+        print(self.ConvertMappingToParens(self.mapping)[1:])
 
     def ValidateMapping(self, mapping: list):
         if(len(mapping) == 0 or mapping[0] != SStruct.UNKNOWN):
@@ -347,17 +372,17 @@ class SStruct:
             outfile.write(
                 str(i)+" "+self.sequences[seq][i] + " " + self.mapping[i])
 
-    def WriteParens(self, outfile):
-        if(ContainsPseudoknots()):
-            raise Exception(
-                "Cannot write strucutre containing pseudoknot using parenthesized format.")
+    # def WriteParens(self, outfile):
+    #     if(ContainsPseudoknots()):
+    #         raise Exception(
+    #             "Cannot write strucutre containing pseudoknot using parenthesized format.")
 
-        for i in range(len(self.sequences)):
-            outfile.write(">"+self.names[i])
-            outfile.write(self.sequences[i][1:])
+    #     for i in range(len(self.sequences)):
+    #         outfile.write(">"+self.names[i])
+    #         outfile.write(self.sequences[i][1:])
 
-        outfile.write(">structure")
-        outfile.write(ConvertMappingToParens(self.mapping)[1:])
+    #     outfile.write(">structure")
+    #     outfile.write(ConvertMappingToParens(self.mapping)[1:])
 
     def ComputePercentIdentity(self):
         pid = 0.0

@@ -13,7 +13,6 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
     inference_engine.RegisterParameters(parameter_manager)
     computation_engine = ComputationEngine(args, description, inference_engine, parameter_manager)
     computation_wrapper = ComputationWrapper(computation_engine)
-
     # if(computation_engine.IsComputeNode()):
     #     computation_engine.RunAsComputeNode()
     #     return

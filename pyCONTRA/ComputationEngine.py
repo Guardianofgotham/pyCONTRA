@@ -473,16 +473,18 @@ class ComputationEngine(DistributedComputationBase):
             else:
                 print(f"Predicting using MEA estimator.")
                 solution.SetMapping(self.inference_engine.PredictPairingsPosterior(shared.gamma))
-        if self.options.output_parens_destination == "":
-            filename = MakeOutputFilename(self.description[nonshared.index].input_filename,
-                                          self.options.output_parens_destination, self.options.gamma < 0, shared.gamma)
-            raise Exception("Not implemented")
-        if self.options.output_bpseq_destination != "":
-            filename = MakeOutputFilename(self.descriptions[nonshared.index].input_filename,
-                                          self.options.output_bpseq_destination, self.options.gamma < 0, shared.gamma)
-            raise Exception("Not implemented")
-        if self.options.output_posteriors_destination != "":
-            raise Exception("Not implemented")
+        # if self.options.output_parens_destination == "":
+        #     filename = self.MakeOutputFilename(self.description[nonshared.index].input_filename,
+        #                                   self.options.output_parens_destination, self.options.gamma < 0, shared.gamma)
+        #     raise Exception("Not implemented")
+        # if self.options.output_bpseq_destination != "":
+        #     filename = self.MakeOutputFilename(self.descriptions[nonshared.index].input_filename,
+        #                                   self.options.output_bpseq_destination, self.options.gamma < 0, shared.gamma)
+        #     raise Exception("Not implemented")
+        # if self.options.output_posteriors_destination != "":
+        #     raise Exception("Not implemented")
+        if self.options.output_parens_destination=="" and self.options.output_bpseq_destination=="" and self.options.output_posteriors_destination=="":
+            solution.WriteParens()
         return
 
     def CheckZerosInData(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo):
