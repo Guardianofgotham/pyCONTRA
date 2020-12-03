@@ -3,7 +3,7 @@ from pyCONTRA.Utilities import *
 
 
 class SStruct:
-    UNPAIRED = -1
+    UNPAIRED = 0
     UNKNOWN = -1
     UNKNOWN_POTENTIAL = -1.0
 

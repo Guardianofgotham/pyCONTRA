@@ -1000,10 +1000,10 @@ class InferenceEngine:
             j = t[1]
 
             if(traceback[self.offset[i]+j] == -1):
-                print("should not get here ")
+                raise Exception("should not get here ")
 
             elif(traceback[self.offset[i]+j] == 0):
-                raise Exception("Not implemented")
+                pass
             elif(traceback[self.offset[i]+j] == 1):
                 traceback_queue.put((i+1, j))
 
@@ -1018,10 +1018,11 @@ class InferenceEngine:
                 k = traceback[self.offset[i]+j]-4
                 traceback_queue.put((i, k))
                 traceback_queue.put((k, j))
-
+        print(solution)
         return solution
 
     def PredictPairingsPosteriorCentroid(self, gamma):
+
         raise Exception("Not implemented")
 
     def GetPosterior(self,   posterior_cutoff):
