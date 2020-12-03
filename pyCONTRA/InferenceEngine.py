@@ -577,12 +577,18 @@ class InferenceEngine:
         if len(values) != self.parameter_manager.GetNumLogicalParameters():
             raise Exception("Parameter Size MisMatch")
         self.cache_initialized = False
-        print(sum(values))
+        print(len(values))
+        print(self.ScoreExternalUnpaired(0));
+
         for i in range(0, len(values)):
             physical_parameters = self.parameter_manager.GetPhysicalParameters(
                 i)
+            if(i==707):
+                print(len(physical_parameters))
             for j in range(0, len(physical_parameters)):
-                physical_parameters[j] = (values[i],0)
+                if(i==706):
+                    print(values[i])
+                self.parameter_manager.GetPhysicalParameters(i)[j] = (values[i],0)
                 # print(physical_parameters[j])
         print(self.ScoreExternalUnpaired(0));
         exit(255)
