@@ -4,10 +4,10 @@ import math
 NEG_INF = -2e20
 
 
-def Fast_Exp(x):
-    if (x <= NEG_INF/2):
-        return 0
-    return math.exp(x)
+# def Fast_Exp(x):
+#     if (x <= NEG_INF/2):
+#         return 0
+#     return math.exp(x)
 
 
 def Fast_Exp(x):
@@ -37,9 +37,9 @@ def Fast_Exp(x):
     return float(1e20) if x > float(46.052) else math.exp(x)
 
 
-def Fast_LogExpPlusOne(x):
-    assert 0 <= x and x <= 30, "Argument out-of-range."
-    return math.log(math.exp(x) + float(1))
+# def Fast_LogExpPlusOne(x):
+#     assert 0 <= x and x <= 30, "Argument out-of-range."
+#     return math.log(math.exp(x) + float(1))
 
 
 def Fast_LogExpPlusOne(x):
@@ -55,8 +55,8 @@ def Fast_LogExpPlusOne(x):
     # Approximating interval: (7.81627, 11.8625) --> ((T(-0.0000113994)*x+T(0.0003734731))*x+T(0.9959107193))*x+T(0.0149855051);
     # 8 polynomials needed.
     
-    # assert float(0.0000000000) <= x and x <= float(
-        # 11.8624794162), f"Argument out-of-range. x: {x}"
+    assert float(0.0000000000) <= x and x <= float(
+        11.8624794162), f"Argument out-of-range. x: {x}"
     if (x < float(3.3792499610)):
 
         if (x < float(1.6320158198)):
@@ -80,21 +80,23 @@ def Fast_LogExpPlusOne(x):
     return ((float(-0.0000113994)*x+float(0.0003734731))*x+float(0.9959107193))*x+float(0.0149855051)
 
 
-def Fast_LogExpMinusOne(x):
-    assert float(0) <= x and x <= float(30), "Argument out-of-range."
-    return math.log(math.exp(x) - float(1))
+# def Fast_LogExpMinusOne(x):
+#     assert float(0) <= x and x <= float(30), "Argument out-of-range."
+#     return math.log(math.exp(x) - float(1))
 
 
-def Fast_LogExpMinusOne(x):
-    raise Exception("Not Implemented")
+# def Fast_LogExpMinusOne(x):
+#     raise Exception("Not Implemented")
 
 
 def Fast_LogPlusEquals(x, y):
+    # if(x!=y):
+    #     print(x,y)
     if x < y:
         temp = x
         x = y
         y = temp
-    if y> float(NEG_INF/2) and x-y < float(30):
+    if y> float(NEG_INF/2) and x-y < float(11.8624794162):
         return Fast_LogExpPlusOne(x-y)+y
     return x
 

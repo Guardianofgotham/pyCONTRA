@@ -577,11 +577,15 @@ class InferenceEngine:
         if len(values) != self.parameter_manager.GetNumLogicalParameters():
             raise Exception("Parameter Size MisMatch")
         self.cache_initialized = False
+        print(sum(values))
         for i in range(0, len(values)):
             physical_parameters = self.parameter_manager.GetPhysicalParameters(
                 i)
             for j in range(0, len(physical_parameters)):
-                physical_parameters[j] = (values[i], 0)
+                physical_parameters[j] = (values[i],0)
+                # print(physical_parameters[j])
+        print(self.ScoreExternalUnpaired(0));
+        exit(255)
         # raise Exception("Not implemented")
 
     def UseLoss(self, true_mapping,  example_loss):
@@ -590,7 +594,7 @@ class InferenceEngine:
     def ScoreUnpairedPosition(self, i):
         return 0
 
-    def ScoreExternalUnpaired(self, i):
+    def ScoreExternalUnpaired(self,i):
         return self.score_external_unpaired[0] + self.ScoreUnpairedPosition(i)
 
     # use Constraints
@@ -654,7 +658,7 @@ class InferenceEngine:
         self.FMi = [NEG_INF]*(self.SIZE)
         self.FM1i = [NEG_INF]*(self.SIZE)
         print(self.L)
-        print(f"SUM allow_paired: {sum(self.allow_paired)}")
+        # print(f"SUM allow_paired: {sum(self.allow_paired)}")
         for i in range(self.L, -1, -1):  # (int i = self.L; i >= 0; i--)
             # print(i)
             for j in range(i, self.L+1):  # (int j = i; j <= self.L; j++
@@ -770,16 +774,17 @@ class InferenceEngine:
             if (self.allow_unpaired_position[j]):
                 sum_i = Fast_LogPlusEquals(
                     sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
-
-                # compute SUM (0<=k<j : F5[k] + FC[k+1,j-1] + ScoreExternalPaired() + ScoreBP(k+1,j) + ScoreJunctionA(j,k))
-            # print(f"banana: {j}")
+            print(self.F5i[j-1] + self.ScoreExternalUnpaired(j))
+            print(sum_i)
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     sum_i = Fast_LogPlusEquals(
                         sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
-
+            print(sum_i)
+            exit(255)
             self.F5i[j] = sum_i
-
+        print(self.F5i[self.L])
+        # exit(255)
             # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         # raise Exception("Not implemented")
 
@@ -880,7 +885,7 @@ class InferenceEngine:
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
         Z = self.ComputeLogPartitionCoefficient()
-
+        print(Z)
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
                 FM2i = NEG_INF
@@ -889,7 +894,7 @@ class InferenceEngine:
                     p1 = self.FM1i[self.offset[i]+i+1]
                     p2 = self.FMi[self.offset[i+1]+j]
                     for k in range(i+1, j):
-                        Fast_LogPlusEquals(FM2i, p1 + p2)
+                        FM2i = Fast_LogPlusEquals(FM2i, p1 + p2)
                         p1 += 1
                         p2 += self.L-k
 
@@ -927,6 +932,7 @@ class InferenceEngine:
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
                             j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j) - Z)
 
+        print(f"{'-'*20}{sum(self.posterior)}{'-'*20}")
         for j in range(1, self.L+1):
             outside = self.F5o[j] - Z
             for k in range(0, j):
@@ -943,23 +949,24 @@ class InferenceEngine:
 
     def PredictPairingsPosterior(self,   gamma: int):
         if(not(gamma > 0)):
-            print("Non-negative gamma expected.")
+            raise Exception("Non-negative gamma expected.")
         unpaired_posterior = [0]*(self.L+1)
         score = []
         traceback = []
 
         for i in range(1, self.L+1):
             unpaired_posterior[i] = 1
-            for j in range(i):
+            for j in range(1, i):
                 unpaired_posterior[i] -= self.posterior[self.offset[j]+i]
             for j in range(i+1, self.L+1):
                 unpaired_posterior[i] -= self.posterior[self.offset[i]+j]
-
+        
         for i in range(1, self.L+1):
             unpaired_posterior[i] /= 2 * gamma
+        
         score = [-1]*self.SIZE
         traceback = [-1]*self.SIZE
-        print(self.SIZE)
+        # print(self.SIZE)
         # DP
 
         for i in range(self.L, -1, -1):
