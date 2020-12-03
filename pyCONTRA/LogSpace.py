@@ -97,3 +97,8 @@ def Fast_LogPlusEquals(x, y):
     if y> float(NEG_INF/2) and x-y < float(30):
         return Fast_LogExpPlusOne(x-y)+y
     return x
+
+def UPDATE_MAX(bs,bt,s,t):
+	if(s>bs):
+		bs,bt=s,t
+	return bs,bt

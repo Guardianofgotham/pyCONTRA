@@ -967,23 +967,24 @@ class InferenceEngine:
                 this_score = score[self.offset[i]+j]
                 this_traceback = traceback[self.offset[i]+j]
                 if(i == j):
-                    UPDATE_MAX(this_score, this_traceback, 0, 0)
+                    this_score, this_traceback=UPDATE_MAX(this_score, this_traceback, 0, 0)
                 else:
                     if(self.allow_unpaired_position[i+1]):
-                        UPDATE_MAX(
+                        this_score, this_traceback=UPDATE_MAX(
                             this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
                     if (self.allow_unpaired_position[j]):
-                        UPDATE_MAX(
+                        
+                        this_score, this_traceback=UPDATE_MAX(
                             this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
                     if(i+2 <= j):
                         if(self.allow_paired[self.offset[i+1]+j]):
-                            UPDATE_MAX(
+                            this_score, this_traceback=UPDATE_MAX(
                                 this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
 
                         p1 = score[self.offset[i]+i+1]
                         p2 = score[self.offset[i+1]+j]
                         for k in range(i+1, j):
-                            UPDATE_MAX(this_score, this_traceback,
+                            this_score, this_traceback=UPDATE_MAX(this_score, this_traceback,
                                        (p1) + (p2), k+4)
                             p1 += 1
                             p2 += self.L-k

@@ -414,6 +414,9 @@ class ComputationEngine(DistributedComputationBase):
             shared_temp.w[i] = shared.w[i] - EPSILON * v[i]
         ComputeFunctionAndGradient(result2, shared_temp, nonshared, True)
         result = (result-result2)/(2*EPSILON)
+    
+    def MakeOutputFilename(self,input_filename,output_destination,cross_validation,gamma):
+        pass
 
     def Predict(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo):
         result.clear()
@@ -466,7 +469,7 @@ class ComputationEngine(DistributedComputationBase):
             if self.options.centroid_estimator:
                 print(f"Predicting using centroid estimator.")
                 solution.SetMapping(
-                    inference_engine.PredictPairingsPosteriorCentroid(shared.gamma))
+                    self.inference_engine.PredictPairingsPosteriorCentroid(shared.gamma))
             else:
                 print(f"Predicting using MEA estimator.")
                 solution.SetMapping(self.inference_engine.PredictPairingsPosterior(shared.gamma))

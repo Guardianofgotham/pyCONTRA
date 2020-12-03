@@ -282,7 +282,7 @@ class SStruct:
         for i in range(1, len(mapping)):
             if (mapping[i] == SStruct.UNKNOWN):
                 parens += "?"
-            elif (mapping[i] == UNPAIRED):
+            elif (mapping[i] == SStruct.UNPAIRED):
                 parens += "."
             elif (mapping[i] > i):
                 parens += "("
@@ -295,7 +295,7 @@ class SStruct:
         if(len(mapping) == 0 or mapping[0] != SStruct.UNKNOWN):
             raise Exception("Invalid mapping.")
         for i in range(1, len(mapping)):
-            if(mapping[i] == UNPAIRED or mapping[i] == SStruct.UNKNOWN):
+            if(mapping[i] == SStruct.UNPAIRED or mapping[i] == SStruct.UNKNOWN):
                 continue
             if(mapping[i] < 1 or mapping[i] >= len(mapping)):
                 raise Exception(
@@ -310,7 +310,7 @@ class SStruct:
     def ContainsPseudoknots(self):
         stack = list()
         for i in range(1, len(self.mapping)):
-            if(self.mapping[i] == UNPAIRED or self.mapping == SStruct.UNKNOWN):
+            if(self.mapping[i] == SStruct.UNPAIRED or self.mapping == SStruct.UNKNOWN):
                 continue
             if(self.mapping[i] > i):
                 stack.append(i)
@@ -335,8 +335,8 @@ class SStruct:
             self.mapping), "Inconsistent lengths."
         for i in range(1, len(self.mapping)):
             if(self.mapping[i] > i and not self.IsComplementary(self.sequences[seq][i], self.sequences[seq][mapping[i]])):
-                self.mapping[self.mapping[i]] = UNPAIRED
-                self.mapping[i] = UNPAIRED
+                self.mapping[self.mapping[i]] = SStruct.UNPAIRED
+                self.mapping[i] = SStruct.UNPAIRED
 
     def WriteBPSEQ(self, outfile, seq=0):
         if(seq < 0 or seq >= len(self.sequences)):
