@@ -197,13 +197,16 @@ class InferenceEngine:
 
         self.FillScores(self.cache_score_helix_sums, 0,
                         len(self.cache_score_helix_sums), 0)
+        # print(self.cache_score_helix_sums[7552443])
+        # print(self.cache_score_helix_sums[:11], sep="\n")
         for i in range(self.L, 0, -1):
             for j in range(i+3, self.L+1):
-                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
-                    i+j)*self.L+j-i-2], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                # print(((i+j)*self.L+j-i))
+                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i-2][0], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                 if (self.allow_paired[self.offset[i+1]+j-1]):
-                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
-                        i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                    # print(self.cache_score_helix_sums[(i+j)*self.L+j-i])#, self.ScoreBasePair(i+1, j-1))
+                    # print(self.cache_score_helix_sums[7552443])
+                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                     if (self.allow_paired[self.offset[i]+j]):
                         self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
                             i+j)*self.L+j-i][0]+self.ScoreHelixStacking(i, j), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
@@ -211,6 +214,8 @@ class InferenceEngine:
     def FillScores(self, container: list, begin: int, end: int, value: float):
         for i in range(begin, end):
             container[i] = (value, container[i][1])
+        # print(container[7552443])
+            
 
     def FillCounts(self):
         raise Exception("Not implemented")
@@ -237,7 +242,7 @@ class InferenceEngine:
         assert 0 < i and i <= self.L and 0 < j and j <= self.L and i != j, "Invalid base-pair"
         return 0
 
-    def ScoreUnpaired(i, j):
+    def ScoreUnpaired(self, i, j):
         return 0
 
     def ScoreHairpin(self, i: int, j: int):
@@ -667,7 +672,7 @@ class InferenceEngine:
                         p2 += self.L-k
                 # print(self.allow_paired[self.offset[i]+j+1])
                 if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
-                    raise Exception(f"If Executed i: {i} j: {j}")
+                    # raise Exception(f"If Executed i: {i} j: {j}")
                     # print(i,j)
                     sum_i = (NEG_INF)
 
