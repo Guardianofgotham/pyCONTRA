@@ -230,9 +230,9 @@ class InferenceEngine:
         return self.is_complementary[self.s[i]][self.s[j]]
         # raise Exception("Not implemented")
 
-    def ScoreJunctionA(self, i: int,  j: int):
-        assert 0 < i and i <= self.L and 0 <= j and j < self.L, "Invalid indices."
-        return 0
+    # def ScoreJunctionA(self, i: int,  j: int):
+    #     assert 0 < i and i <= self.L and 0 <= j and j < self.L, "Invalid indices."
+    #     return 0
 
     def ScoreJunctionB(self, i: int, j: int):
         assert 0 < i and i < self.L and 0 < j and j < self.L, "Invalid indices."
@@ -693,15 +693,15 @@ class InferenceEngine:
 
                     # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
                     for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
-                        print(i, j, p)
+                        #print(i, j, p)
                         if (p > i and not(self.allow_unpaired_position[p])):
                             break
 
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
-                        FCptr = self.FCi[self.offset[p+1]-1]
+                        FCptr = self.FCi[self.offset[p+1]-1 : ]
                         # (int q = j; q >= q_min; q--):
                         for q in range(j, q_min-1, -1):
-                            print(i, j, p, q)
+                            #print(i, j, p, q)
                             if(q < j and not(self.allow_unpaired_position[q+1])):
                                 break
                             if(not(self.allow_paired[self.offset[p+1]+q])):
@@ -711,7 +711,7 @@ class InferenceEngine:
                                 score = score_helix + FCptr[q]
                             # score = (p == i && q == j) ?
                             else:
-                                score = score_other + self.cache_score_single[p-i][j-q].first + FCptr[q] + self.ScoreBasePair(
+                                score = score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
                                     p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
 
                             #     (score_helix + FCptr[q]) :
@@ -1091,4 +1091,5 @@ class InferenceEngine:
         if(not(0 < i and i <= self.L and 0 <= j and j < self.L)):
             print("Invalid Indices")
         # complete this function
-        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]].first
+        print(self.s[i],self.s[j+1], len(self.score_helix_closing[self.s[i]]))
+        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]][0]
