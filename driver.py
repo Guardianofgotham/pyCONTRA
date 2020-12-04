@@ -1,6 +1,8 @@
 # Driver Test Code in here
 from pyCONTRA import *
+# import pdb
 
+# pdb.set_trace()
 args, fileNames = getArgumentsObject()
 print(f"Training mode: {args.training_mode}")
 print(f"Use constraints: {args.use_constraints}")

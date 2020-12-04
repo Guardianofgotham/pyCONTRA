@@ -969,31 +969,32 @@ class InferenceEngine:
 
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
-                this_score = score[self.offset[i]+j]
-                this_traceback = traceback[self.offset[i]+j]
+                # this_score = score[self.offset[i]+j]
+                # this_traceback = traceback[self.offset[i]+j]
                 if(i == j):
-                    this_score, this_traceback = UPDATE_MAX(
-                        this_score, this_traceback, 0, 0)
+                    score[self.offset[i]+j], traceback[self.offset[i]+j] = UPDATE_MAX(
+                        score[self.offset[i]+j], traceback[self.offset[i]+j], 0, 0)
                 else:
                     if(self.allow_unpaired_position[i+1]):
-                        this_score, this_traceback = UPDATE_MAX(
-                            this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
+                        score[self.offset[i]+j], traceback[self.offset[i]+j] = UPDATE_MAX(
+                            score[self.offset[i]+j], traceback[self.offset[i]+j], unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
                     if (self.allow_unpaired_position[j]):
 
-                        this_score, this_traceback = UPDATE_MAX(
-                            this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
+                        score[self.offset[i]+j], traceback[self.offset[i]+j] = UPDATE_MAX(
+                            score[self.offset[i]+j], traceback[self.offset[i]+j], unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
                     if(i+2 <= j):
                         if(self.allow_paired[self.offset[i+1]+j]):
-                            this_score, this_traceback = UPDATE_MAX(
-                                this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
+                            score[self.offset[i]+j], traceback[self.offset[i]+j] = UPDATE_MAX(
+                                score[self.offset[i]+j], traceback[self.offset[i]+j], self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
 
                         p1 = score[self.offset[i]+i+1]
                         p2 = score[self.offset[i+1]+j]
+                        i1=0;i2=0
                         for k in range(i+1, j):
-                            this_score, this_traceback = UPDATE_MAX(this_score, this_traceback,
-                                                                    (p1) + (p2), k+4)
-                            p1 += 1
-                            p2 += self.L-k
+                            score[self.offset[i]+j], traceback[self.offset[i]+j] = UPDATE_MAX(score[self.offset[i]+j], traceback[self.offset[i]+j],
+                                                                    score[self.offset[i]+i+1+i1] + score[self.offset[i+1]+j+i2], k+4)
+                            i1 += 1
+                            i2 += self.L-k
 
         solution = [SStruct.UNPAIRED]*(self.L+1)
         solution[0] = SStruct.UNKNOWN
