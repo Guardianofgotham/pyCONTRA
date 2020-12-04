@@ -540,7 +540,7 @@ class InferenceEngine:
         for i in range(1, self.L+1):
             self.s[i] = self.BYTE[(sequence[i])]
 
-        for i in range(0, self.L):
+        for i in range(0, self.L+1):
             self.offset[i] = self.ComputeRowOffset(i, self.L+1)
             self.allow_unpaired_position[i] = 1
             self.loss_unpaired_position[i] = 0
@@ -773,14 +773,14 @@ class InferenceEngine:
             # compute F5[j-1] + ScoreExternalUnpaired()
 
             if (self.allow_unpaired_position[j]):
-                # count+=1
+                count+=1
                 sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
             # print(sum_i)
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     count+=1
                     sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
-                    # print(self.F5i[k] , self.FCi[self.offset[k+1]+j-1], self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
+                    print(self.F5i[k] , round(self.FCi[self.offset[k+1]+j-1],5), self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
             self.F5i[j] = sum_i
         print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
         # exit(255);
@@ -861,6 +861,7 @@ class InferenceEngine:
                                 continue
                             FCptr[q] = Fast_LogPlusEquals(FCptr[q],
                                                           score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
+                            self.FCo[self.offset[p+1]-1+q]=FCptr[q]
                     FM2o = Fast_LogPlusEquals(
                         FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
