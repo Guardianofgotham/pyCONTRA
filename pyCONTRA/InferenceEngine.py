@@ -241,18 +241,18 @@ class InferenceEngine:
 
     def ScoreJunctionB(self, i: int, j: int):
         assert 0 < i and i < self.L and 0 < j and j < self.L, "Invalid indices."
-        return 0
+        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]][0] + self.score_terminal_mismatch[self.s[i]][self.s[j+1]][self.s[i+1]][self.s[j]][0]
 
     def ScoreBasePair(self, i: int,  j: int):
         assert 0 < i and i <= self.L and 0 < j and j <= self.L and i != j, "Invalid base-pair"
-        return 0
+        return 0 +self.score_base_pair[self.s[i]][self.s[j]][0]
 
     def ScoreUnpaired(self, i, j):
         return 0
 
     def ScoreHairpin(self, i: int, j: int):
         assert 0 < i and i + C_MIN_HAIRPIN_LENGTH <= j and j < self.L, "Hairpin boundaries invalid."
-        return self.ScoreUnpaired(i, j) + self.ScoreJunctionB(i, j)
+        return self.ScoreUnpaired(i, j) + self.ScoreJunctionB(i, j) + self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][0]
 
     def ScoreHelix(self, i: int,  j: int, m: int):
         raise Exception("Not implemented")
@@ -641,13 +641,14 @@ class InferenceEngine:
     # MEA inference
 
     def ScoreHelixStacking(self, i, j):
-        return 0
+        return self.score_helix_stacking[self.s[i]][self.s[j]][self.s[i+1]][self.s[j-1]][0]
+
 
     def ScoreMultiPaired(self):
-        return 0
+        return self.score_multi_paired[0]
 
     def ScoreMultiBase(self):
-        return 0
+        return self.score_multi_base[0]
 
     def ScoreMultiUnpaired(self, i):
         return self.ScoreUnpairedPosition(i)
@@ -664,21 +665,20 @@ class InferenceEngine:
         print(self.L)
         # print(f"SUM allow_paired: {sum(self.allow_paired)}")
         for i in range(self.L, -1, -1):  # (int i = self.L; i >= 0; i--)
-            # print(i)
+            # print(f"sum(FCi): {sum(self.FCi)}")
             for j in range(i, self.L+1):  # (int j = i; j <= self.L; j++
                 # print(i,j)
 
                 FM2i = NEG_INF
                 if (i+2 <= j):
                     # print(f"Innfer IF {i} {j}")
-                    p1 = self.FM1i[self.offset[i]+i+1]
-                    p2 = self.FMi[self.offset[i+1]+j]
+                    p1 = self.FM1i[self.offset[i]+i+1:]
+                    p2 = self.FMi[self.offset[i+1]+j:]
+                    i1=0;i2=0
                     for k in range(i+1, j):  # (register int k = i+1; k < j; k++)
-
-                        FM2i = Fast_LogPlusEquals(FM2i, (p1) + (p2))
-                        p1 += 1
-                        p2 += self.L-k
-                # print(self.allow_paired[self.offset[i]+j+1])
+                        FM2i = Fast_LogPlusEquals(FM2i, (p1[i1]) + (p2[i2]))
+                        i1 += 1
+                        i2 += self.L-k
                 if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
                     # raise Exception(f"If Executed i: {i} j: {j}")
                     # print(i,j)
@@ -722,53 +722,50 @@ class InferenceEngine:
                                 score = score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
                                     p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
 
-                            #     (score_helix + FCptr[q]) :
-                            #     (score_other + cache_score_single[p-i][j-q].first + FCptr[q] + ScoreBasePair(p+1,q) +
-                            #     ScoreJunctionB(q,p) + ScoreSingleNucleotides(i,j,p,q));
+                            sum_i = Fast_LogPlusEquals(sum_i, score)
 
-                                sum_i = Fast_LogPlusEquals(sum_i, score)
+                    sum_i = Fast_LogPlusEquals(
+                        sum_i, FM2i + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
-                            sum_i = Fast_LogPlusEquals(
-                                sum_i, FM2i + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
+                    self.FCi[self.offset[i]+j] = sum_i
+                if (0 < i and i+2 <= j and j < self.L):
+                    sum_i = NEG_INF
 
-                            self.FCi[self.offset[i]+j] = sum_i
-                            if (0 < i and i+2 <= j and j < self.L):
-                                sum_i = NEG_INF
+                    # compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
 
-                                # compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
+                    if (self.allow_paired[self.offset[i+1]+j]):
+                        sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
+                            j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j))
 
-                                if (self.allow_paired[self.offset[i+1]+j]):
-                                    sum_i = Fast_LogPlusEquals(sum_i, self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
-                                        j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j))
+                    # compute FM1[i+1,j] + b
 
-                                # compute FM1[i+1,j] + b
+                    if (self.allow_unpaired_position[i+1]):
+                        sum_i = Fast_LogPlusEquals(
+                            sum_i, self.FM1i[self.offset[i+1]+j] + self.ScoreMultiUnpaired(i+1))
 
-                                if (self.allow_unpaired_position[i+1]):
-                                    sum_i = Fast_LogPlusEquals(
-                                        sum_i, self.FM1i[self.offset[i+1]+j] + self.ScoreMultiUnpaired(i+1))
+                    self.FM1i[self.offset[i]+j] = sum_i
+                if ((0 < i) and (i+2 <= j) and (j < self.L)):
 
-                                self.FM1i[self.offset[i]+j] = sum_i
-                            if ((0 < i) and (i+2 <= j) and (j < self.L)):
+                    sum_i = NEG_INF
 
-                                sum_i = NEG_INF
+                    # compute SUM (i<k<j : FM1[i,k] + FM[k,j])
 
-                                # compute SUM (i<k<j : FM1[i,k] + FM[k,j])
+                    sum_i = Fast_LogPlusEquals(sum_i, FM2i)
 
-                                sum_i = Fast_LogPlusEquals(sum_i, FM2i)
+                    # compute FM[i,j-1] + b
 
-                                # compute FM[i,j-1] + b
-
-                                if (self.allow_unpaired_position[j]):
-                                    sum_i = Fast_LogPlusEquals(
-                                        sum_i, self.FMi[self.offset[i]+j-1] + self.ScoreMultiUnpaired(j))
+                    if (self.allow_unpaired_position[j]):
+                        sum_i = Fast_LogPlusEquals(
+                            sum_i, self.FMi[self.offset[i]+j-1] + self.ScoreMultiUnpaired(j))
 
                                 # compute FM1[i,j]
 
-                                sum_i = Fast_LogPlusEquals(
-                                    sum_i, self.FM1i[self.offset[i]+j])
+                    sum_i = Fast_LogPlusEquals(
+                        sum_i, self.FM1i[self.offset[i]+j])
 
-                                self.FMi[self.offset[i]+j] = sum_i
+                    self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
+        count = 0
         for j in range(1, self.L+1):  # (int j = 1; j <= self.L; j++)
 
             sum_i = NEG_INF
@@ -776,19 +773,24 @@ class InferenceEngine:
             # compute F5[j-1] + ScoreExternalUnpaired()
 
             if (self.allow_unpaired_position[j]):
-                sum_i = Fast_LogPlusEquals(
-                    sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
+                # count+=1
+                sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
+            # print(sum_i)
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
-                    sum_i = Fast_LogPlusEquals(
-                        sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
+                    count+=1
+                    sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
+                    # print(self.F5i[k] , self.FCi[self.offset[k+1]+j-1], self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
             self.F5i[j] = sum_i
+        print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
+        # exit(255);
         # raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
         return self.F5i[self.L]
 
     def ComputeOutside(self):
+        self.InitializeCache()
         self.F5o.clear()
         self.F5o = [NEG_INF]*(self.L+1)
         self.FCo.clear()
@@ -863,17 +865,14 @@ class InferenceEngine:
                         FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
                 if i+2 <= j:
-                    p1i = self.FM1i[self.offset[i]+i+1]
-                    p2i = self.FMi[self.offset[i+1]+j]
-                    p1o = self.FM1o[self.offset[i]+i+1]
-                    p2o = self.FMo[self.offset[i+1]+j]
+                    i1=0;o1=0;i2=0;o2=0
                     for k in range(i+1, j):
-                        p1o = Fast_LogPlusEquals(p1o, FM2o + p2i)
-                        p2o = Fast_LogPlusEquals(p2o, FM2o + p1i)
-                        p1i += 1
-                        p1o += 1
-                        p2i += self.L-k
-                        p2o += self.L-k
+                        self.FM1o[self.offset[i]+i+1+o1] = Fast_LogPlusEquals(self.FM1o[self.offset[i]+i+1+o1], FM2o + self.FMi[self.offset[i+1]+j+i2])
+                        self.FMo[self.offset[i+1]+j+o2] = Fast_LogPlusEquals(self.FMo[self.offset[i+1]+j+o2], FM2o + self.FM1i[self.offset[i]+i+1+i1])
+                        i1 += 1
+                        o1 += 1
+                        i2 += self.L-k
+                        o2 += self.L-k
 
     def ComputeFeatureCountExpectations(self):
         raise Exception("Not implemented")
@@ -882,19 +881,21 @@ class InferenceEngine:
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
         Z = self.ComputeLogPartitionCoefficient()
-        print(Z)
+        print(f"Z: {Z}")
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
                 FM2i = NEG_INF
 
-                if i + 2 <= j:
-                    p1 = self.FM1i[self.offset[i]+i+1]
-                    p2 = self.FMi[self.offset[i+1]+j]
+                if (i+2 <= j):
+                    p1 = self.FM1i[self.offset[i]+i+1:]
+                    p2 = self.FMi[self.offset[i+1]+j:]
+                    i1=0;i2=0
                     for k in range(i+1, j):
-                        FM2i = Fast_LogPlusEquals(FM2i, p1 + p2)
-                        p1 += 1
-                        p2 += self.L-k
-
+                        FM2i = Fast_LogPlusEquals(FM2i, p1[i1] + p2[i2])
+                        i1+=1
+                        i2 += (self.L-k)
+                # print(FM2i)
+                # exit(255)
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
 
                     outside = self.FCo[self.offset[i]+j] - Z
@@ -905,9 +906,8 @@ class InferenceEngine:
                         self.CountHairpin(i, j, Fast_Exp(
                             outside + self.ScoreHairpin(i, j)))
 
-                    score_helix = outside + \
-                        self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
-                                                                             j+1) if (i+2 <= j) else 0
+                    score_helix = (outside + self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
+                                                                             j+1)) if (i+2 <= j) else 0
                     score_other = outside + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
@@ -921,15 +921,15 @@ class InferenceEngine:
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
 
-                            self.posterior[self.offset[p+1]+q] += Fast_Exp(score_helix + FCptr[q] if(p == i and q == j) else score_other + self.cache_score_single[p-i]
-                                                                           [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
+                            self.posterior[self.offset[p+1]+q] += (Fast_Exp(score_helix + FCptr[q]) if(p == i and q == j) else (score_other + self.cache_score_single[p-i]
+                                                                           [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
 
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
                             j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j) - Z)
 
-        print(f"{'-'*20}{sum(self.posterior)}{'-'*20}")
+        print(f"{'-'*20} SUM POSTERIOR: {sum(self.posterior)}{'-'*20}")
         for j in range(1, self.L+1):
             outside = self.F5o[j] - Z
             for k in range(0, j):
@@ -1100,4 +1100,4 @@ class InferenceEngine:
         # complete this function
         # print(self.s[i],self.s[j+1], len(self.score_helix_closing[self.s[i]]))
         # print(f"i: {i}, j+1: {j+1}, s[i]: {self.s[i]}, s[j+1]: {self.s[j+1]}, shc[s[i]]: {self.score_helix_closing[self.s[i]]}")
-        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]][0]
+        return 0 + self.score_helix_closing[self.s[i]][self.s[j+1]][0] + (self.score_dangle_left[self.s[i]][self.s[j+1]][self.s[i+1]][0] if i<self.L else 0 ) +  (self.score_dangle_right[self.s[i]][self.s[j+1]][self.s[j]][0] if j>0 else 0)

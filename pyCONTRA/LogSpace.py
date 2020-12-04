@@ -34,7 +34,7 @@ def Fast_Exp(x):
         return ((float(0.0573782771)*x+float(0.3580258429))*x+float(0.9121133217))*x+float(0.9793091728)
     if (x < float(0)):
         return ((float(0.1199175927)*x+float(0.4815668234))*x+float(0.9975991939))*x+float(0.9999505077)
-    return float(1e20) if x > float(46.052) else math.exp(x)
+    return (float(1e20)) if x > float(46.052) else (math.exp(x))
 
 
 # def Fast_LogExpPlusOne(x):
@@ -97,7 +97,7 @@ def Fast_LogPlusEquals(x, y):
         x = y
         y = temp
     if y> float(NEG_INF/2) and x-y < float(11.8624794162):
-        return Fast_LogExpPlusOne(x-y)+y
+        x= Fast_LogExpPlusOne(x-y)+y
     return x
 
 def UPDATE_MAX(bs,bt,s,t):
