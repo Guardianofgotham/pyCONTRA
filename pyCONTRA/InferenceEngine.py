@@ -678,7 +678,8 @@ class InferenceEngine:
                     for k in range(i+1, j):  # (register int k = i+1; k < j; k++)
                         FM2i = Fast_LogPlusEquals(FM2i, (p1[i1]) + (p2[i2]))
                         i1 += 1
-                        i2 += self.L-k
+                        i2 += self.L-k    
+                    #print(p1[i1],p2[i2])
                 if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
                     # raise Exception(f"If Executed i: {i} j: {j}")
                     # print(i,j)
@@ -686,9 +687,11 @@ class InferenceEngine:
 
                     # compute ScoreHairpin(i,j)
 
-                    if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
+                    if ((self.allow_unpaired[self.offset[i]+j]) and (j-i >= C_MIN_HAIRPIN_LENGTH)):
                         sum_i = Fast_LogPlusEquals(
                             sum_i, self.ScoreHairpin(i, j))
+                        
+                    #print(f"sum_i:{sum_i}")
 
                     score_helix = 0
                     # score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
@@ -698,18 +701,24 @@ class InferenceEngine:
                     else:
                         score_helix = 0
                     score_other = self.ScoreJunctionB(i, j)
-
+                    #print(f"sum_i:{sum_i}")
                     # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
+                    
                     for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
                         #print(i, j, p)
+                        #if(p==i+5):
+                         #   exit(255)
+
                         if (p > i and not(self.allow_unpaired_position[p])):
                             break
 
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCi[self.offset[p+1]-1:]
+                        
                         # (int q = j; q >= q_min; q--):
                         for q in range(j, q_min-1, -1):
                             #print(i, j, p, q)
+                            
                             if(q < j and not(self.allow_unpaired_position[q+1])):
                                 break
                             if(not(self.allow_paired[self.offset[p+1]+q])):
@@ -717,17 +726,24 @@ class InferenceEngine:
 
                             if((p == i) and (q == j)):
                                 score = score_helix + FCptr[q]
+                                print(f"FCptr: {FCptr[q]}")
+                    
                             # score = (p == i && q == j) ?
                             else:
                                 score = score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
                                     p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
+                            
 
+                                
                             sum_i = Fast_LogPlusEquals(sum_i, score)
 
+                            
+                    #print(f"sum_i:{sum_i}")
                     sum_i = Fast_LogPlusEquals(
                         sum_i, FM2i + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
                     self.FCi[self.offset[i]+j] = sum_i
+                    #print(f"sum_i:{sum_i}")
                 if (0 < i and i+2 <= j and j < self.L):
                     sum_i = NEG_INF
 
@@ -766,6 +782,7 @@ class InferenceEngine:
                     self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
         count = 0
+        #print(*self.FCi,sep='\n')
         for j in range(1, self.L+1):  # (int j = 1; j <= self.L; j++)
 
             sum_i = NEG_INF
@@ -780,7 +797,7 @@ class InferenceEngine:
                 if (self.allow_paired[self.offset[k+1]+j]):
                     count+=1
                     sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
-                    print(self.F5i[k] , round(self.FCi[self.offset[k+1]+j-1],5), self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
+                    #print(self.F5i[k] , round(self.FCi[self.offset[k+1]+j-1],5), self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
             self.F5i[j] = sum_i
         print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
         # exit(255);
