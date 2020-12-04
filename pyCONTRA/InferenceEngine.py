@@ -7,6 +7,7 @@ import array as arr
 from queue import Queue
 import sys
 import math
+from pyCONTRA.pair import *
 
 
 class InferenceEngine:
@@ -20,21 +21,21 @@ class InferenceEngine:
         for i in range(M+1):
             self.is_complementary.append([0]*(M+1))
         self.BYTE = {"A": 0, "U": 3, "C": 1, "G": 2}
-        self.is_complementary[self.BYTE["A"]][self.BYTE["U"]] =1
-        self.is_complementary[self.BYTE["U"]][self.BYTE["A"]] =1
-        self.is_complementary[self.BYTE["G"]][self.BYTE["U"]] =1
-        self.is_complementary[self.BYTE["U"]][self.BYTE["G"]] =1
-        self.is_complementary[self.BYTE["C"]][self.BYTE["G"]] =1
-        self.is_complementary[self.BYTE["G"]][self.BYTE["C"]] =1
+        self.is_complementary[self.BYTE["A"]][self.BYTE["U"]] = 1
+        self.is_complementary[self.BYTE["U"]][self.BYTE["A"]] = 1
+        self.is_complementary[self.BYTE["G"]][self.BYTE["U"]] = 1
+        self.is_complementary[self.BYTE["U"]][self.BYTE["G"]] = 1
+        self.is_complementary[self.BYTE["C"]][self.BYTE["G"]] = 1
+        self.is_complementary[self.BYTE["G"]][self.BYTE["C"]] = 1
 
         self.cache_initialized = False
-        self.parameter_manager = None
+        self.parameter_manager = pair(0,0)
         self.num_data_sources = num_data_sources
         self.L = 0
         self.SIZE = 0
 
         if PROFILE == 0:
-            N, SIZE2 = None, None
+            N, SIZE2 = pair(0,0), pair(0,0)
             A, weights = [], []
 
         self.s, self.offset = [], []
@@ -63,14 +64,14 @@ class InferenceEngine:
         for i in range(M+1):
             self.score_base_pair.append([])
             for j in range(M+1):
-                self.score_base_pair[-1].append((0, 0))
+                self.score_base_pair[-1].append(pair(0,0))
 
         self.score_terminal_mismatch = list()
         self.score_internal_explicit = list()
         for i in range(D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
             self.score_internal_explicit.append([])
             for j in range(D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
-                self.score_internal_explicit[-1].append((0, 0))
+                self.score_internal_explicit[-1].append(pair(0,0))
         self.score_internal_1x1_nucleotides = list()
         self.score_helix_stacking = list()
         self.score_helix_closing = list()
@@ -87,51 +88,54 @@ class InferenceEngine:
             for j in range(M+1):
                 self.score_terminal_mismatch[-1].append([])
                 self.score_internal_explicit[-1].append([])
-                self.score_internal_1x1_nucleotides[-1].append(None)
+                self.score_internal_1x1_nucleotides[-1].append(pair(0, 0))
                 self.score_helix_stacking[-1].append([])
-                self.score_helix_closing[-1].append((0, 0))
+                self.score_helix_closing[-1].append(pair(0,0))
                 self.score_dangle_left[-1].append([])
                 self.score_dangle_right[-1].append([])
                 for k in range(M+1):
                     self.score_terminal_mismatch[-1][-1].append([])
                     # self.score_terminal_mismatch[-1][-1].append([])
                     self.score_helix_stacking[-1][-1].append([])
-                    self.score_dangle_left[-1][-1].append([])
-                    self.score_dangle_right[-1][-1].append([])
+                    self.score_dangle_left[-1][-1].append(pair(0, 0))
+                    self.score_dangle_right[-1][-1].append(pair(0, 0))
                     for self.L in range(M+1):
-                        self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
-                        # self.score_terminal_mismatch[-1][-1][-1].append((0, 0))
-                        self.score_helix_stacking[-1][-1][-1].append((0, 0))
+                        self.score_terminal_mismatch[-1][-1][-1].append(pair(0,0))
+                        # self.score_terminal_mismatch[-1][-1][-1].append(pair(0,0))
+                        self.score_helix_stacking[-1][-1][-1].append(pair(0,0))
 
         self.cache_score_hairpin_length = []
         self.score_hairpin_length_at_least = [0]*(D_MAX_HAIRPIN_LENGTH+1)
         self.score_bulge_length_at_least = []
         self.score_internal_length_at_least = []
-        self.score_internal_symmetric_length_at_least = [
-            0]*(D_MAX_BULGE_LENGTH+1)
-        self.score_bulge_0x1_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
-        self.score_bulge_1x0_nucleotides = [0]*(D_MAX_BULGE_LENGTH+1)
+        self.score_internal_symmetric_length_at_least = []
+        self.score_bulge_0x1_nucleotides = []
+        self.score_bulge_1x0_nucleotides = []
+        for i in range(D_MAX_BULGE_LENGTH+1):
+            self.score_internal_symmetric_length_at_least.append(pair(0,0))
+            self.score_bulge_0x1_nucleotides.append(pair(0,0))
+            self.score_bulge_1x0_nucleotides.append(pair(0,0))
         self.score_internal_asymmetry_at_least = []
-        self.score_multi_base = None
-        self.score_multi_unpaired = None
-        self.score_multi_paired = None
-        self.score_external_unpaired = (0, 0)
-        self.score_external_paired = (0, 0)
-        self.log_score_evidence = None
+        self.score_multi_base = pair(0,0)
+        self.score_multi_unpaired = pair(0,0)
+        self.score_multi_paired = pair(0,0)
+        self.score_external_unpaired = pair(0,0)
+        self.score_external_paired = pair(0,0)
+        self.log_score_evidence = pair(0,0)
         self.cache_score_single = []
         for i in range(C_MAX_SINGLE_LENGTH+1):
             self.cache_score_single.append([])
             for j in range(C_MAX_SINGLE_LENGTH+1):
-                self.cache_score_single[-1].append((0, 0))
+                self.cache_score_single[-1].append(pair(0,0))
         self.cache_score_helix_sums = []
         self.posterior = []
         self.score_hairpin_length_at_least = []
         for i in range(D_MAX_HAIRPIN_LENGTH+1):
-            self.score_hairpin_length_at_least.append((0, 0))
-            self.cache_score_hairpin_length.append((0, 0))
-            self.score_bulge_length_at_least.append((0, 0))
-            self.score_internal_length_at_least.append((0, 0))
-            self.score_internal_asymmetry_at_least.append((0, 0))
+            self.score_hairpin_length_at_least.append(pair(0,0))
+            self.cache_score_hairpin_length.append(pair(0,0))
+            self.score_bulge_length_at_least.append(pair(0,0))
+            self.score_internal_length_at_least.append(pair(0,0))
+            self.score_internal_asymmetry_at_least.append(pair(0,0))
 
     def InitializeCache(self):
         if self.cache_initialized:
@@ -165,7 +169,7 @@ class InferenceEngine:
         temp_cache_score_internal_symmetric_length[0] = self.score_internal_symmetric_length_at_least[0][0]
         for i in range(1, D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
             temp_cache_score_internal_symmetric_length[i] = temp_cache_score_internal_symmetric_length[i -
-                                                                                                       1] + self.score_internal_symmetric_length_at_least[i]
+                                                                                                       1] + self.score_internal_symmetric_length_at_least[i][0]
 
         # if PARAMS_INTERNAL_ASYMMETRY
         temp_cache_score_internal_asymmetry = [0]*(D_MAX_INTERNAL_ASYMMETRY+1)
@@ -202,11 +206,13 @@ class InferenceEngine:
         for i in range(self.L, 0, -1):
             for j in range(i+3, self.L+1):
                 # print(((i+j)*self.L+j-i))
-                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i-2][0], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
+                    i+j)*self.L+j-i-2][0], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                 if (self.allow_paired[self.offset[i+1]+j-1]):
                     # print(self.cache_score_helix_sums[(i+j)*self.L+j-i])#, self.ScoreBasePair(i+1, j-1))
                     # print(self.cache_score_helix_sums[7552443])
-                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
+                    self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
+                        i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                     if (self.allow_paired[self.offset[i]+j]):
                         self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
                             i+j)*self.L+j-i][0]+self.ScoreHelixStacking(i, j), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
@@ -215,7 +221,6 @@ class InferenceEngine:
         for i in range(begin, end):
             container[i] = (value, container[i][1])
         # print(container[7552443])
-            
 
     def FillCounts(self):
         raise Exception("Not implemented")
@@ -275,7 +280,8 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def CountHairpin(self, i: int, j: int,  value):
-        self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)] = (self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][0], self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][1]+value)
+        self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)] = (self.cache_score_hairpin_length[min(
+            j-i, D_MAX_HAIRPIN_LENGTH)][0], self.cache_score_hairpin_length[min(j-i, D_MAX_HAIRPIN_LENGTH)][1]+value)
 
     def CountHelix(self, i: int,  j: int,  m: int, value):
         raise Exception("Not implemented")
@@ -348,7 +354,7 @@ class InferenceEngine:
         for i in range(M+1):
             for j in range(M+1):
                 if (i == M or j == M):
-                    self.score_base_pair[i][j] = (0, 0)
+                    self.score_base_pair[i][j] = pair(0,0)
                 else:
                     buffer = f"base_pair_{alphabet[i]}{alphabet[j]}"
                     buffer2 = f"base_pair_{alphabet[j]}{alphabet[i]}"
@@ -380,7 +386,7 @@ class InferenceEngine:
         for i in range(0, D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
             for j in range(0, D_MAX_INTERNAL_EXPLICIT_LENGTH+1):
                 if i == 0 or j == 0:
-                    self.score_internal_explicit[i][j] = (0, 0)
+                    self.score_internal_explicit[i][j] = pair(0,0)
                 else:
                     buffer = f"internal_explicit_{min(i, j)}_{max(i, j)}"
                     parameter_manager.AddParameterMapping(
@@ -388,7 +394,7 @@ class InferenceEngine:
 
         for i in range(0, D_MAX_BULGE_LENGTH+1):
             if i == 0:
-                self.score_bulge_length_at_least[i] = (0, 0)
+                self.score_bulge_length_at_least[i] = pair(0,0)
             else:
                 buffer = f"bulge_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
@@ -396,7 +402,7 @@ class InferenceEngine:
 
         for i in range(0, D_MAX_INTERNAL_LENGTH+1):
             if (i < 2):
-                self.score_internal_length_at_least[i] = (0, 0)
+                self.score_internal_length_at_least[i] = pair(0,0)
             else:
                 buffer = f"internal_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
@@ -404,7 +410,7 @@ class InferenceEngine:
 
         for i in range(0,  D_MAX_INTERNAL_SYMMETRIC_LENGTH+1):
             if (i == 0):
-                self.score_internal_symmetric_length_at_least[i] = (0, 0)
+                self.score_internal_symmetric_length_at_least[i] = pair(0,0)
             else:
                 buffer = f"internal_symmetric_length_at_least_{i}"
                 parameter_manager.AddParameterMapping(
@@ -412,7 +418,7 @@ class InferenceEngine:
 
         for i in range(0, D_MAX_INTERNAL_ASYMMETRY+1):
             if (i == 0):
-                self.score_internal_asymmetry_at_least[i] = (0, 0)
+                self.score_internal_asymmetry_at_least[i] = pair(0,0)
             else:
                 buffer = f"internal_asymmetry_at_least_{i}"
                 parameter_manager.AddParameterMapping(
@@ -420,8 +426,8 @@ class InferenceEngine:
 
         for i1 in range(0,  M+1):
             if (i1 == M):
-                self.score_bulge_0x1_nucleotides[i1] = (0, 0)
-                self.score_bulge_1x0_nucleotides[i1] = (0, 0)
+                self.score_bulge_0x1_nucleotides[i1] = pair(0,0)
+                self.score_bulge_1x0_nucleotides[i1] = pair(0,0)
             else:
                 buffer = f"bulge_0x1_nucleotides_{alphabet[i1]}"
                 parameter_manager.AddParameterMapping(
@@ -432,7 +438,7 @@ class InferenceEngine:
         for i1 in range(0, M+1):
             for i2 in range(0, M+1):
                 if (i1 == M or i2 == M):
-                    self.score_internal_1x1_nucleotides[i1][i2] = (0, 0)
+                    self.score_internal_1x1_nucleotides[i1][i2] = pair(0,0)
                 else:
                     buffer = f"internal_1x1_nucleotides_{alphabet[i1]}{alphabet[i2]}"
                     buffer2 = f"internal_1x1_nucleotides_{alphabet[i2]}{alphabet[i1]}"
@@ -448,7 +454,7 @@ class InferenceEngine:
                 for i2 in range(0, M+1):
                     for j2 in range(0, M+1):
                         if (i1 == M or j1 == M or i2 == M or j2 == M):
-                            self.score_helix_stacking[i1][j1][i2][j2] = (0, 0)
+                            self.score_helix_stacking[i1][j1][i2][j2] = pair(0,0)
                         else:
                             buffer = f"helix_stacking_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}{alphabet[j2]}"
                             buffer2 = f"helix_stacking_{alphabet[j2]}{alphabet[i2]}{alphabet[j1]}{alphabet[i1]}"
@@ -463,7 +469,7 @@ class InferenceEngine:
         for i in range(0, M+1):
             for j in range(0, M+1):
                 if (i == M or j == M):
-                    self.score_helix_closing[i][j] = (0, 0)
+                    self.score_helix_closing[i][j] = pair(0,0)
                 else:
                     buffer = f"helix_closing_{alphabet[i]}{alphabet[j]}"
                     parameter_manager.AddParameterMapping(
@@ -480,7 +486,7 @@ class InferenceEngine:
             for j1 in range(0, M+1):
                 for i2 in range(0, M+1):
                     if (i1 == M or j1 == M or i2 == M):
-                        self.score_dangle_left[i1][j1][i2] = (0, 0)
+                        self.score_dangle_left[i1][j1][i2] = pair(0,0)
                     else:
                         buffer = f"dangle_left_{alphabet[i1]}{alphabet[j1]}{alphabet[i2]}"
                         parameter_manager.AddParameterMapping(
@@ -490,7 +496,7 @@ class InferenceEngine:
             for j1 in range(0, M+1):
                 for j2 in range(0, M+1):
                     if (i1 == M or j1 == M or j2 == M):
-                        self.score_dangle_right[i1][j1][j2] = (0, 0)
+                        self.score_dangle_right[i1][j1][j2] = pair(0,0)
                     else:
                         buffer = f"dangle_right_{alphabet[i1]}{alphabet[j1]}{ alphabet[j2]}"
                         parameter_manager.AddParameterMapping(
@@ -528,7 +534,7 @@ class InferenceEngine:
         self.loss_paired = [0]*(self.SIZE)
 
         self.cache_score_helix_sums.clear()
-        self.cache_score_helix_sums = [(0, 0)]*((2*self.L+1)*self.L)
+        self.cache_score_helix_sums = [pair(0,0)]*((2*self.L+1)*self.L)
         sequence = sstruct.GetSequences()[0]
         self.s[0] = len(alphabet)
         for i in range(1, self.L+1):
@@ -549,7 +555,7 @@ class InferenceEngine:
         for i in range(0, self.L+1):
             self.allow_paired[self.offset[0]+i] = 0
             self.allow_paired[self.offset[i]+i] = 0
-        
+
         print(f"SUM allow_paired_1: {sum(self.allow_paired)}")
         if not self.allow_noncomplementary:
             for i in range(1, self.L+1):
@@ -558,7 +564,7 @@ class InferenceEngine:
                         self.allow_paired[self.offset[i]+j] = 0
         print(f"SUM allow_paired_2: {sum(self.allow_paired)}")
         # exit(255)
-        
+
         for i in range(0, self.num_data_sources):
             self.score_unpaired_position_raw[i].clear()
             self.score_unpaired_position[i].clear()
@@ -577,22 +583,14 @@ class InferenceEngine:
         if len(values) != self.parameter_manager.GetNumLogicalParameters():
             raise Exception("Parameter Size MisMatch")
         self.cache_initialized = False
-        print(len(values))
-        print(self.ScoreExternalUnpaired(0));
 
         for i in range(0, len(values)):
             physical_parameters = self.parameter_manager.GetPhysicalParameters(
                 i)
-            if(i==707):
+            if(i == 707):
                 print(len(physical_parameters))
             for j in range(0, len(physical_parameters)):
-                if(i==706):
-                    print(values[i])
-                self.parameter_manager.GetPhysicalParameters(i)[j] = (values[i],0)
-                # print(physical_parameters[j])
-        print(self.ScoreExternalUnpaired(0));
-        exit(255)
-        # raise Exception("Not implemented")
+                    physical_parameters[j][0] = values[i]
 
     def UseLoss(self, true_mapping,  example_loss):
         raise Exception("Not implemented")
@@ -600,7 +598,7 @@ class InferenceEngine:
     def ScoreUnpairedPosition(self, i):
         return 0
 
-    def ScoreExternalUnpaired(self,i):
+    def ScoreExternalUnpaired(self, i):
         return self.score_external_unpaired[0] + self.ScoreUnpairedPosition(i)
 
     # use Constraints
@@ -708,7 +706,7 @@ class InferenceEngine:
                             break
 
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
-                        FCptr = self.FCi[self.offset[p+1]-1 : ]
+                        FCptr = self.FCi[self.offset[p+1]-1:]
                         # (int q = j; q >= q_min; q--):
                         for q in range(j, q_min-1, -1):
                             #print(i, j, p, q)
@@ -780,18 +778,11 @@ class InferenceEngine:
             if (self.allow_unpaired_position[j]):
                 sum_i = Fast_LogPlusEquals(
                     sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
-            print(self.F5i[j-1] + self.ScoreExternalUnpaired(j))
-            print(sum_i)
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     sum_i = Fast_LogPlusEquals(
                         sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
-            print(sum_i)
-            exit(255)
             self.F5i[j] = sum_i
-        print(self.F5i[self.L])
-        # exit(255)
-            # compute SUM (i<=p<p+2<=q<=j : ScoreSingle(i,j,p,q) + FC[p+1,q-1])
         # raise Exception("Not implemented")
 
     def ComputeLogPartitionCoefficient(self):
@@ -916,7 +907,7 @@ class InferenceEngine:
 
                     score_helix = outside + \
                         self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
-                                                                        j+1) if (i+2 <= j) else 0
+                                                                             j+1) if (i+2 <= j) else 0
                     score_other = outside + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
@@ -966,10 +957,10 @@ class InferenceEngine:
                 unpaired_posterior[i] -= self.posterior[self.offset[j]+i]
             for j in range(i+1, self.L+1):
                 unpaired_posterior[i] -= self.posterior[self.offset[i]+j]
-        
+
         for i in range(1, self.L+1):
             unpaired_posterior[i] /= 2 * gamma
-        
+
         score = [-1]*self.SIZE
         traceback = [-1]*self.SIZE
         # print(self.SIZE)
@@ -980,25 +971,26 @@ class InferenceEngine:
                 this_score = score[self.offset[i]+j]
                 this_traceback = traceback[self.offset[i]+j]
                 if(i == j):
-                    this_score, this_traceback=UPDATE_MAX(this_score, this_traceback, 0, 0)
+                    this_score, this_traceback = UPDATE_MAX(
+                        this_score, this_traceback, 0, 0)
                 else:
                     if(self.allow_unpaired_position[i+1]):
-                        this_score, this_traceback=UPDATE_MAX(
+                        this_score, this_traceback = UPDATE_MAX(
                             this_score, this_traceback, unpaired_posterior[i+1] + score[self.offset[i+1]+j], 1)
                     if (self.allow_unpaired_position[j]):
-                        
-                        this_score, this_traceback=UPDATE_MAX(
+
+                        this_score, this_traceback = UPDATE_MAX(
                             this_score, this_traceback, unpaired_posterior[j] + score[self.offset[i]+j-1], 2)
                     if(i+2 <= j):
                         if(self.allow_paired[self.offset[i+1]+j]):
-                            this_score, this_traceback=UPDATE_MAX(
+                            this_score, this_traceback = UPDATE_MAX(
                                 this_score, this_traceback, self.posterior[self.offset[i+1]+j] + score[self.offset[i+1]+j-1], 3)
 
                         p1 = score[self.offset[i]+i+1]
                         p2 = score[self.offset[i+1]+j]
                         for k in range(i+1, j):
-                            this_score, this_traceback=UPDATE_MAX(this_score, this_traceback,
-                                       (p1) + (p2), k+4)
+                            this_score, this_traceback = UPDATE_MAX(this_score, this_traceback,
+                                                                    (p1) + (p2), k+4)
                             p1 += 1
                             p2 += self.L-k
 

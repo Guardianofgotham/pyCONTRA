@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
 from pyCONTRA.ParameterGroup import *
+from pyCONTRA.pair import *
 
 
 class ParameterManager:
@@ -39,7 +40,7 @@ class ParameterManager:
             self.logical_to_physical.append(list())
         if(logical_name=="external_unpaired"):
             print("gap: "+str(self.logical_name_to_index[logical_name]))
-        #self.physical_to_logical[physical_ptr] = self.logical_name_to_index[logical_name]
+        #self.physical_to_logical[physical_ptr] = self.logical_name_to_index[logical_name
         self.logical_to_physical[self.logical_name_to_index[logical_name]].append(physical_ptr)
 
     def ReadFromFile(self, filename: str, values: list):
