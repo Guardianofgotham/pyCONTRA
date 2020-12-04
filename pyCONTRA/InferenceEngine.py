@@ -662,7 +662,7 @@ class InferenceEngine:
         self.FCi = [NEG_INF]*(self.SIZE)
         self.FMi = [NEG_INF]*(self.SIZE)
         self.FM1i = [NEG_INF]*(self.SIZE)
-        print(self.L)
+        # print(self.L)
         # print(f"SUM allow_paired: {sum(self.allow_paired)}")
         for i in range(self.L, -1, -1):  # (int i = self.L; i >= 0; i--)
             # print(f"sum(FCi): {sum(self.FCi)}")
@@ -726,7 +726,7 @@ class InferenceEngine:
 
                             if((p == i) and (q == j)):
                                 score = score_helix + FCptr[q]
-                                print(f"FCptr: {FCptr[q]}")
+                                # print(f"FCptr: {FCptr[q]}")
                     
                             # score = (p == i && q == j) ?
                             else:
@@ -782,6 +782,8 @@ class InferenceEngine:
                     self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
         count = 0
+        print(sum(self.FCi))
+        # exit(255)
         #print(*self.FCi,sep='\n')
         for j in range(1, self.L+1):  # (int j = 1; j <= self.L; j++)
 
@@ -877,7 +879,7 @@ class InferenceEngine:
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
                             FCptr[q] = Fast_LogPlusEquals(FCptr[q],
-                                                          score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
+                                                          score_helix if (p == i and q == j) else (score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
                             self.FCo[self.offset[p+1]-1+q]=FCptr[q]
                     FM2o = Fast_LogPlusEquals(
                         FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
@@ -898,7 +900,7 @@ class InferenceEngine:
     def ComputePosterior(self):
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
-        Z = self.ComputeLogPartitionCoefficient()
+        Z = 42.2609#self.ComputeLogPartitionCoefficient()
         print(f"Z: {Z}")
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
@@ -912,12 +914,12 @@ class InferenceEngine:
                         FM2i = Fast_LogPlusEquals(FM2i, p1[i1] + p2[i2])
                         i1+=1
                         i2 += (self.L-k)
+                    # print(FM2i)
                 # print(FM2i)
                 # exit(255)
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
 
                     outside = self.FCo[self.offset[i]+j] - Z
-
                     # // compute ScoreHairpin(i,j)
 
                     if (self.allow_unpaired[self.offset[i]+j] and j-i >= C_MIN_HAIRPIN_LENGTH):
@@ -939,9 +941,9 @@ class InferenceEngine:
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
 
-                            self.posterior[self.offset[p+1]+q] += (Fast_Exp(score_helix + FCptr[q]) if(p == i and q == j) else (score_other + self.cache_score_single[p-i]
+                            self.posterior[self.offset[p+1]+q] += Fast_Exp((score_helix + FCptr[q]) if(p == i and q == j) else (score_other + self.cache_score_single[p-i]
                                                                            [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
-
+                            print(self.posterior[self.offset[p+1]+q], FCptr[q])
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
