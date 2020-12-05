@@ -111,10 +111,11 @@ class InferenceEngine:
         self.score_internal_symmetric_length_at_least = []
         self.score_bulge_0x1_nucleotides = []
         self.score_bulge_1x0_nucleotides = []
-        for i in range(D_MAX_BULGE_LENGTH+1):
-            self.score_internal_symmetric_length_at_least.append(pair(0,0))
+        for i in range(M+1):
             self.score_bulge_0x1_nucleotides.append(pair(0,0))
             self.score_bulge_1x0_nucleotides.append(pair(0,0))
+        for i in range(D_MAX_BULGE_LENGTH+1):
+            self.score_internal_symmetric_length_at_least.append(pair(0,0))
         self.score_internal_asymmetry_at_least = []
         self.score_multi_base = pair(0,0)
         self.score_multi_unpaired = pair(0,0)
@@ -201,16 +202,11 @@ class InferenceEngine:
 
         self.FillScores(self.cache_score_helix_sums, 0,
                         len(self.cache_score_helix_sums), 0)
-        # print(self.cache_score_helix_sums[7552443])
-        # print(self.cache_score_helix_sums[:11], sep="\n")
         for i in range(self.L, 0, -1):
             for j in range(i+3, self.L+1):
-                # print(((i+j)*self.L+j-i))
                 self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
                     i+j)*self.L+j-i-2][0], self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                 if (self.allow_paired[self.offset[i+1]+j-1]):
-                    # print(self.cache_score_helix_sums[(i+j)*self.L+j-i])#, self.ScoreBasePair(i+1, j-1))
-                    # print(self.cache_score_helix_sums[7552443])
                     self.cache_score_helix_sums[(i+j)*self.L+j-i] = (self.cache_score_helix_sums[(
                         i+j)*self.L+j-i][0]+self.ScoreBasePair(i+1, j-1), self.cache_score_helix_sums[(i+j)*self.L+j-i][1])
                     if (self.allow_paired[self.offset[i]+j]):
@@ -220,7 +216,6 @@ class InferenceEngine:
     def FillScores(self, container: list, begin: int, end: int, value: float):
         for i in range(begin, end):
             container[i] = (value, container[i][1])
-        # print(container[7552443])
 
     def FillCounts(self):
         raise Exception("Not implemented")
@@ -258,13 +253,20 @@ class InferenceEngine:
         raise Exception("Not implemented")
 
     def ScoreSingleNucleotides(self, i: int,  j: int, p: int, q: int):
-        assert(0 < i and i <= p and p + 2 <= q and q <= j and j <
-               self.L, "Single-branch loop boundaries invalid.")
         l1 = p - i
         l2 = j - q
-        assert (l1 + l2 > 0 and l1 >= 0 and l2 >= 0 and l1 + l2 <=
-                C_MAX_SINGLE_LENGTH, "Invalid single-branch loop size.")
-        return self.ScoreUnpaired(i, p) + self.ScoreUnpaired(q, j)
+        toReturn =0
+        return (self.score_bulge_0x1_nucleotides[self.s[j]][0] if l1==0 and l2==1 else 0) + (self.score_bulge_1x0_nucleotides[self.s[i+1]][0] if l1 == 1 and l2 == 0 else 0) + (self.score_internal_1x1_nucleotides[self.s[i+1]][self.s[j]][0] if l1 == 1 and l2 == 1 else 0)
+        # if(l1==0 and l2==1):
+        #     toReturn+=self.score_bulge_0x1_nucleotides[self.s[j]][0]
+
+        # if(l1==0 and l2==0):
+        #     toReturn+=self.score_bulge_1x0_nucleotides[self.s[i+1]][0]
+
+        # if(l1==1 and l2==1):
+        #     toReturn+=self.score_internal_1x1_nucleotides[self.s[i+1]][self.s[j]][0]
+
+        return toReturn
         # raise Exception("Not implemented")
 
     def ScoreSingle(self, i: int, j: int, p: int, q: int):
@@ -442,12 +444,12 @@ class InferenceEngine:
                 else:
                     buffer = f"internal_1x1_nucleotides_{alphabet[i1]}{alphabet[i2]}"
                     buffer2 = f"internal_1x1_nucleotides_{alphabet[i2]}{alphabet[i1]}"
-                if (buffer < buffer2):
-                    parameter_manager.AddParameterMapping(
-                        buffer, self.score_internal_1x1_nucleotides[i1][i2])
-                else:
-                    parameter_manager.AddParameterMapping(
-                        buffer2, self.score_internal_1x1_nucleotides[i1][i2])
+                    if (buffer < buffer2):
+                        parameter_manager.AddParameterMapping(
+                            buffer, self.score_internal_1x1_nucleotides[i1][i2])
+                    else:
+                        parameter_manager.AddParameterMapping(
+                            buffer2, self.score_internal_1x1_nucleotides[i1][i2])
 
         for i1 in range(0, M+1):
             for j1 in range(0, M+1):
@@ -465,7 +467,6 @@ class InferenceEngine:
                             parameter_manager.AddParameterMapping(
                                 buffer2, self.score_helix_stacking[i1][j1][i2][j2])
 
-        print(f"PMANAGER: {parameter_manager.GetNumLogicalParameters()}")
         for i in range(0, M+1):
             for j in range(0, M+1):
                 if (i == M or j == M):
@@ -523,7 +524,6 @@ class InferenceEngine:
         self.cache_initialized = False
         self.L = sstruct.GetLength()
         self.SIZE = (self.L+1)*(self.L+2) // 2
-        print(self.SIZE)
         self.s = [0]*(self.L+1)
         self.offset = [0]*(self.L+1)
         self.allow_unpaired_position = [0]*(self.L+1)
@@ -551,18 +551,15 @@ class InferenceEngine:
             self.loss_unpaired[i] = 0
             self.loss_paired[i] = 0
 
-        print(f"SUM allow_paired_0: {sum(self.allow_paired)}")
         for i in range(0, self.L+1):
             self.allow_paired[self.offset[0]+i] = 0
             self.allow_paired[self.offset[i]+i] = 0
 
-        print(f"SUM allow_paired_1: {sum(self.allow_paired)}")
         if not self.allow_noncomplementary:
             for i in range(1, self.L+1):
                 for j in range(i+1, self.L+1):
                     if not self.IsComplementary(i, j):
                         self.allow_paired[self.offset[i]+j] = 0
-        print(f"SUM allow_paired_2: {sum(self.allow_paired)}")
         # exit(255)
 
         for i in range(0, self.num_data_sources):
@@ -579,7 +576,6 @@ class InferenceEngine:
     # load parameter values
 
     def LoadValues(self, values: list):
-        print(len(values), self.parameter_manager.GetNumLogicalParameters())
         if len(values) != self.parameter_manager.GetNumLogicalParameters():
             raise Exception("Parameter Size MisMatch")
         self.cache_initialized = False
@@ -587,8 +583,6 @@ class InferenceEngine:
         for i in range(0, len(values)):
             physical_parameters = self.parameter_manager.GetPhysicalParameters(
                 i)
-            if(i == 707):
-                print(len(physical_parameters))
             for j in range(0, len(physical_parameters)):
                     physical_parameters[j][0] = values[i]
 
@@ -604,7 +598,6 @@ class InferenceEngine:
     # use Constraints
 
     def UseConstraints(self, true_mapping):
-        # print(len(true_mapping), self.L+1)
         if(not(len(true_mapping) == self.L+1)):
             raise Exception("Supplied mapping of incorrect length!")
         cache_initialized = False
@@ -662,16 +655,17 @@ class InferenceEngine:
         self.FCi = [NEG_INF]*(self.SIZE)
         self.FMi = [NEG_INF]*(self.SIZE)
         self.FM1i = [NEG_INF]*(self.SIZE)
-        # print(self.L)
-        # print(f"SUM allow_paired: {sum(self.allow_paired)}")
+        cond1,cond2,cond3,cond4=0,0,0,0
+        s=0;sh=0;so=0;helpers=0;
+        cach = 0;ssn=0
+        # exit(255)
         for i in range(self.L, -1, -1):  # (int i = self.L; i >= 0; i--)
-            # print(f"sum(FCi): {sum(self.FCi)}")
             for j in range(i, self.L+1):  # (int j = i; j <= self.L; j++
-                # print(i,j)
+
 
                 FM2i = NEG_INF
                 if (i+2 <= j):
-                    # print(f"Innfer IF {i} {j}")
+                    cond1+=1
                     p1 = self.FM1i[self.offset[i]+i+1:]
                     p2 = self.FMi[self.offset[i+1]+j:]
                     i1=0;i2=0
@@ -679,72 +673,55 @@ class InferenceEngine:
                         FM2i = Fast_LogPlusEquals(FM2i, (p1[i1]) + (p2[i2]))
                         i1 += 1
                         i2 += self.L-k    
-                    #print(p1[i1],p2[i2])
                 if ((0 < i) and (j < self.L) and (self.allow_paired[self.offset[i]+j+1])):
-                    # raise Exception(f"If Executed i: {i} j: {j}")
-                    # print(i,j)
+                    cond2+=1
                     sum_i = (NEG_INF)
-
-                    # compute ScoreHairpin(i,j)
 
                     if ((self.allow_unpaired[self.offset[i]+j]) and (j-i >= C_MIN_HAIRPIN_LENGTH)):
                         sum_i = Fast_LogPlusEquals(
                             sum_i, self.ScoreHairpin(i, j))
-                        
-                    #print(f"sum_i:{sum_i}")
 
-                    score_helix = 0
-                    # score_helix = (i+2 <= j ? ScoreBasePair(i+1,j) + ScoreHelixStacking(i,j+1) : 0);
-                    if(i+2 <= j):
-                        score_helix = self.ScoreBasePair(
-                            i+1, j)+self.ScoreHelixStacking(i, j+1)
-                    else:
-                        score_helix = 0
+                    score_helix = self.ScoreBasePair(i+1,j) + self.ScoreHelixStacking(i,j+1) if i+2 <= j else 0
                     score_other = self.ScoreJunctionB(i, j)
-                    #print(f"sum_i:{sum_i}")
-                    # (int p = i; p <= std::min(i+C_MAX_SINGLE_LENGTH,j); p++)
-                    
-                    for p in range(i, (min(i+C_MAX_SINGLE_LENGTH, j)+1)):
-                        #print(i, j, p)
-                        #if(p==i+5):
-                         #   exit(255)
-
+                    sh+=score_helix
+                    so+=score_other
+                    for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
                         if (p > i and not(self.allow_unpaired_position[p])):
                             break
 
                         q_min = max(p+2, p-i+j-C_MAX_SINGLE_LENGTH)
                         FCptr = self.FCi[self.offset[p+1]-1:]
-                        
-                        # (int q = j; q >= q_min; q--):
+
                         for q in range(j, q_min-1, -1):
-                            #print(i, j, p, q)
+
                             
-                            if(q < j and not(self.allow_unpaired_position[q+1])):
+                            if(q < j and (not self.allow_unpaired_position[q+1])):
                                 break
-                            if(not(self.allow_paired[self.offset[p+1]+q])):
+                            if(not self.allow_paired[self.offset[p+1]+q]):
                                 continue
-
-                            if((p == i) and (q == j)):
-                                score = score_helix + FCptr[q]
-                                # print(f"FCptr: {FCptr[q]}")
-                    
-                            # score = (p == i && q == j) ?
-                            else:
-                                score = score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
-                                    p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
                             
-
-                                
+                            score = (score_helix + FCptr[q]) if (p == i and q == j) else (score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
+                                    p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
+                            # if((p == i) and (q == j)):
+                            #     score = score_helix + FCptr[q]
+                            # else:
+                            #     score = score_other + self.cache_score_single[p-i][j-q][0] + FCptr[q] + self.ScoreBasePair(
+                            #         p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
+                            s+=score
+                            helpers+=self.cache_score_single[p-i][j-q][0]+self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)
+                            cach+=self.cache_score_single[p-i][j-q][0]
+                            ssn+=self.ScoreSingleNucleotides(i, j, p, q)
                             sum_i = Fast_LogPlusEquals(sum_i, score)
 
                             
-                    #print(f"sum_i:{sum_i}")
+
                     sum_i = Fast_LogPlusEquals(
                         sum_i, FM2i + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
 
                     self.FCi[self.offset[i]+j] = sum_i
-                    #print(f"sum_i:{sum_i}")
+
                 if (0 < i and i+2 <= j and j < self.L):
+                    cond3+=1
                     sum_i = NEG_INF
 
                     # compute FC[i+1,j-1] + ScoreJunctionA(j,i) + c + ScoreBP(i+1,j)
@@ -761,7 +738,7 @@ class InferenceEngine:
 
                     self.FM1i[self.offset[i]+j] = sum_i
                 if ((0 < i) and (i+2 <= j) and (j < self.L)):
-
+                    cond4+=1
                     sum_i = NEG_INF
 
                     # compute SUM (i<k<j : FM1[i,k] + FM[k,j])
@@ -782,24 +759,21 @@ class InferenceEngine:
                     self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
         count = 0
+        print(f"cond1: {cond1}, cond2: {cond2}, cond3: {cond3}, cond4: {cond4}")
+        print(f"sh: {sh},so: {so},s: {s}, helpers: {helpers}")
+        print(f"cach: {cach}, ssn: {ssn}")
+        
+
         print(sum(self.FCi))
-        # exit(255)
-        #print(*self.FCi,sep='\n')
-        for j in range(1, self.L+1):  # (int j = 1; j <= self.L; j++)
-
+        for j in range(1, self.L+1):  
             sum_i = NEG_INF
-
-            # compute F5[j-1] + ScoreExternalUnpaired()
-
             if (self.allow_unpaired_position[j]):
                 count+=1
                 sum_i = Fast_LogPlusEquals(sum_i, self.F5i[j-1] + self.ScoreExternalUnpaired(j))
-            # print(sum_i)
             for k in range(0, j):
                 if (self.allow_paired[self.offset[k+1]+j]):
                     count+=1
                     sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
-                    #print(self.F5i[k] , round(self.FCi[self.offset[k+1]+j-1],5), self.ScoreExternalPaired(), self.ScoreBasePair(k+1, j), self.ScoreJunctionA(j, k))
             self.F5i[j] = sum_i
         print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
         # exit(255);
@@ -900,7 +874,7 @@ class InferenceEngine:
     def ComputePosterior(self):
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
-        Z = 42.2609#self.ComputeLogPartitionCoefficient()
+        Z = self.ComputeLogPartitionCoefficient()
         print(f"Z: {Z}")
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
@@ -914,9 +888,6 @@ class InferenceEngine:
                         FM2i = Fast_LogPlusEquals(FM2i, p1[i1] + p2[i2])
                         i1+=1
                         i2 += (self.L-k)
-                    # print(FM2i)
-                # print(FM2i)
-                # exit(255)
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
 
                     outside = self.FCo[self.offset[i]+j] - Z
@@ -943,7 +914,6 @@ class InferenceEngine:
 
                             self.posterior[self.offset[p+1]+q] += Fast_Exp((score_helix + FCptr[q]) if(p == i and q == j) else (score_other + self.cache_score_single[p-i]
                                                                            [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
-                            print(self.posterior[self.offset[p+1]+q], FCptr[q])
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
@@ -962,7 +932,6 @@ class InferenceEngine:
                 self.posterior[self.offset[i] +
                                j] = self.Clip(self.posterior[self.offset[i]+j], 0, 1)
 
-        # raise Exception("Not implemented")
 
     def PredictPairingsPosterior(self,   gamma: int):
         if(not(gamma > 0)):
@@ -983,8 +952,6 @@ class InferenceEngine:
 
         score = [-1]*self.SIZE
         traceback = [-1]*self.SIZE
-        # print(self.SIZE)
-        # DP
 
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
@@ -1026,7 +993,8 @@ class InferenceEngine:
             j = t[1]
 
             if(traceback[self.offset[i]+j] == -1):
-                raise Exception("should not get here ")
+                pass
+                # raise Exception("should not get here ")
 
             elif(traceback[self.offset[i]+j] == 0):
                 pass

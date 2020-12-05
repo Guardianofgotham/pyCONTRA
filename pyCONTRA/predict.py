@@ -62,4 +62,4 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
                 MakeDirectory(output_posteriors_destination)
         computation_wrapper.Predict(computation_wrapper.GetAllUnits(), w, args.gamma, args.log_base) 
     print("Inside Prediction")
-    computation_engine.StopComputeNodes()
+    # computation_engine.StopComputeNodes()
