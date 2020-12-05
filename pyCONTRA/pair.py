@@ -21,4 +21,7 @@ class pair:
             raise Exception("Pair Index out-of-range in assignment")
     
     def __str__(self):
-        return f"p{self.i1} {self.i2}"
+        return f"{self.i1} {self.i2}"
+    
+    def __radd__(self, other):
+        return self.i1+self.i2+other

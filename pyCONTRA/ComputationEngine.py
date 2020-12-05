@@ -28,7 +28,8 @@ class ComputationEngine(DistributedComputationBase):
         print(shared.command)
         print("-"*20)
         if shared.command == ProcessingType.CHECK_PARSABILITY:
-            self.CheckParsability(result, nonshared)
+            result = self.CHECK_PARSABILITY(result, nonshared)
+            return result
         elif shared.command == ProcessingType.COMPUTE_SOLUTION_NORM_BOUND:
             self.ComputeSolutionNormBound(result, shared, nonshared)
         elif shared.command == ProcessingType.COMPUTE_GRADIENT_NORM_BOUND:
@@ -67,22 +68,22 @@ class ComputationEngine(DistributedComputationBase):
             assert False, "Unknown command type"
     # methods to act on individual work units
 
-    def CheckParsability(self, result: list, nonshared: NonSharedInfo):
+    def CHECK_PARSABILITY(self, result: list, nonshared: NonSharedInfo):
         sstruct: SStruct = self.description[nonshared.index].sstruct
         self.inference_engine.LoadSequence(sstruct)
-        self.inference_engine.LoadValues(
-            self.parameter_manager.GetNumLogicalParameters())
+        self.inference_engine.LoadValues([i for i in range(self.parameter_manager.GetNumLogicalParameters())])
         # print(sstruct.GetMapping())
         self.inference_engine.UseConstraints(sstruct.GetMapping())
         self.inference_engine.UpdateEvidenceStructures()
-        self.inference_engine.ComputeViterbi()
-        conditional_score = self.inference_engine.GetViterbiScore()
+        # self.inference_engine.ComputeViterbi()
+        # conditional_score = self.inference_engine.GetViterbiScore()
         result.clear()
         result = [0]*len(self.description)
-        if conditional_score < NEG_INF/2:
-            result[nonshared.index] = 0
-        else:
-            result[nonshared.index] = 1
+        # if conditional_score < NEG_INF/2:
+        result[nonshared.index] = 0
+        return result
+        # else:
+        #     result[nonshared.index] = 1
 
     def ComputeSolutionNormBound(self, result: list,   shared: SharedInfo,   nonshared: NonSharedInfo):
         max_entropy = 0

@@ -37,15 +37,15 @@ class ComputationWrapper(object):
             self.nonshared_info.append(NonSharedInfo())
             self.nonshared_info[i].index=units[i]
         
-        self.computation_engine.DistributeComputation(parsable,self.shared_info,self.nonshared_info)
+        parsable = self.computation_engine.DistributeComputation(parsable,self.shared_info,self.nonshared_info)
         for i in range(len(units)):
-            if(not(units[i] >= 0 and units[i] < int(parsable.size()))):
-                print("Out-of-bounds index.")
+            print(parsable, units)
+            # assert not(units[i] >= 0 and units[i] < len(parsable) ), "Out-of-bounds index."
             if(parsable[units[i]]):
-                ret.push_back(units[i])
+                ret.append(units[i])
             else:
                 print("No valid parse for file: ", self.GetDescriptions()[units[i]].input_filename )
-        return ret
+        return units
 
     def ComputeSolutionNormBound(self,  units,   C,  log_base):
         raise Exception("Not implemented")

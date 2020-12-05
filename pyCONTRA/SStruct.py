@@ -93,7 +93,6 @@ class SStruct:
 
         for i in data:
             s = i.strip()
-            print(s)
             if(len(s) == 0):
                 continue
             if(s[0] == ">"):
@@ -293,7 +292,6 @@ class SStruct:
                 raise Exception("Invalid structure.")
     
     def ConvertMappingToParens(self, mapping):
-        print(mapping)
         parens = "@"
         for i in range(1, len(mapping)):
             if(mapping[i]==SStruct.UNKNOWN):

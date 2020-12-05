@@ -117,12 +117,13 @@ class DistributedComputationBase(object):
         partial_result = list()
         for j in range(0, len(nonshared_data)):
             # print(shared_data.command)
-            self.DoComputation(partial_result, shared_data, nonshared_data[j])
+            partial_result = self.DoComputation(partial_result, shared_data, nonshared_data[j])
             if(len(result)==0):
                 result = [0]*len(partial_result)
             elif len(result)!=len(partial_result):
                 raise Exception("Encountered return values of different size.")
         result+=partial_result
+        return result
         
 
     ## some simple routines for dealing with node IDs

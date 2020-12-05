@@ -34,6 +34,9 @@ def getArgumentsObject():
     parseObject.add_argument("--predict", type=str, default="",
                              required=False, help="prediction filename")
 
+    parseObject.add_argument("--train", type=str, default="",
+                             required=False, help="training filename")
+
     parseObject.add_argument("--verbose", type=bool, default=False,
                              required=False, help="show detailed console output: bool")
 
@@ -118,6 +121,9 @@ def getArgumentsObject():
     args = parseObject.parse_args()
     if args.predict!="":
         fNames.append(args.predict)
+    verfiyFileNames(args, fNames)
+    if args.train!="":
+        fNames.append(args.train)
     verfiyFileNames(args, fNames)
     return args, fNames
 

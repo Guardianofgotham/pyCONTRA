@@ -2,8 +2,9 @@ from pyCONTRA.ComputationWrapper import *
 
 
 class OptimizationWrapper:
-    def __init__(self):
-        raise Exception("Not implemented")
+    def __init__(self, optimization_wrapper: OptimizationWrapper, initial_w: list, training: list, holdout:list):
+        self.
+        
 
     def OptimizationWrapper(self, computation_wrapper):
         raise Exception("Not implemented")

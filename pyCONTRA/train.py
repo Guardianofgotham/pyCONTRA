@@ -34,7 +34,6 @@ def RunTrainingMode(args: argparse.Namespace, description: list):
     else:
         for i in range(0, parameter_manager.GetNumLogicalParameters()):
             w0.append(0)
-    
     units = computation_wrapper.FilterNonparsable(computation_wrapper.GetAllUnits())
     optimization_wrapper = OptimizationWrapper()
 
