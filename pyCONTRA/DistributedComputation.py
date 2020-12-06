@@ -115,9 +115,10 @@ class DistributedComputationBase(object):
         # starting_time = time()
         result.clear()
         partial_result = list()
+        print(f"len(non_shared): {len(nonshared_data)}")
         for j in range(0, len(nonshared_data)):
             # print(shared_data.command)
-            partial_result = self.DoComputation(partial_result, shared_data, nonshared_data[j])
+            self.DoComputation(partial_result, shared_data, nonshared_data[j])
             if(len(result)==0):
                 result = [0]*len(partial_result)
             elif len(result)!=len(partial_result):
