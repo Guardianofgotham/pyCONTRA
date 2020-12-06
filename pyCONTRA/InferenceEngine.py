@@ -266,7 +266,7 @@ class InferenceEngine:
         # if(l1==1 and l2==1):
         #     toReturn+=self.score_internal_1x1_nucleotides[self.s[i+1]][self.s[j]][0]
 
-        return toReturn
+        # return toReturn
         # raise Exception("Not implemented")
 
     def ScoreSingle(self, i: int, j: int, p: int, q: int):
@@ -838,7 +838,7 @@ class InferenceEngine:
 
                 if (0 < i and j < self.L and self.allow_paired[self.offset[i]+j+1]):
                     score_helix = self.FCo[self.offset[i]+j] + self.ScoreBasePair(
-                        i+1, j) + self.ScoreHelixStacking(i, j+1) if (i+2 <= j) else 0
+                        i+1, j) + self.ScoreHelixStacking(i, j+1) if i+2 <= j else 0
                     score_other = self.FCo[self.offset[i] +
                                            j] + self.ScoreJunctionB(i, j)
 
@@ -853,7 +853,7 @@ class InferenceEngine:
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
                             FCptr[q] = Fast_LogPlusEquals(FCptr[q],
-                                                          score_helix if (p == i and q == j) else (score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
+                                                          score_helix if (p == i and q == j) else score_other + self.cache_score_single[p-i][j-q][0] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
                             self.FCo[self.offset[p+1]-1+q]=FCptr[q]
                     FM2o = Fast_LogPlusEquals(
                         FM2o, self.FCo[self.offset[i]+j] + self.ScoreJunctionA(i, j) + self.ScoreMultiPaired() + self.ScoreMultiBase())
@@ -897,8 +897,8 @@ class InferenceEngine:
                         self.CountHairpin(i, j, Fast_Exp(
                             outside + self.ScoreHairpin(i, j)))
 
-                    score_helix = (outside + self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
-                                                                             j+1)) if (i+2 <= j) else 0
+                    score_helix = outside + self.ScoreBasePair(i+1, j) + self.ScoreHelixStacking(i,
+                                                                             j+1) if i+2 <= j else 0
                     score_other = outside + self.ScoreJunctionB(i, j)
 
                     for p in range(i, min(i+C_MAX_SINGLE_LENGTH, j)+1):
@@ -912,8 +912,8 @@ class InferenceEngine:
                             if (not self.allow_paired[self.offset[p+1]+q]):
                                 continue
 
-                            self.posterior[self.offset[p+1]+q] += Fast_Exp((score_helix + FCptr[q]) if(p == i and q == j) else (score_other + self.cache_score_single[p-i]
-                                                                           [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q)))
+                            self.posterior[self.offset[p+1]+q] += Fast_Exp(score_helix + FCptr[q] if p == i and q == j else score_other + self.cache_score_single[p-i]
+                                                                           [j-q][0] + FCptr[q] + self.ScoreBasePair(p+1, q) + self.ScoreJunctionB(q, p) + self.ScoreSingleNucleotides(i, j, p, q))
                 if (0 < i and i+2 <= j and j < self.L):
                     if (self.allow_paired[self.offset[i+1]+j]):
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
