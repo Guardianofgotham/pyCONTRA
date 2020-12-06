@@ -38,8 +38,6 @@ class ParameterManager:
             self.logical_name_to_index[logical_name] = len(self.names)
             self.names.append(logical_name)
             self.logical_to_physical.append(list())
-        if(logical_name=="external_unpaired"):
-            print("gap: "+str(self.logical_name_to_index[logical_name]))
         #self.physical_to_logical[physical_ptr] = self.logical_name_to_index[logical_name
         self.logical_to_physical[self.logical_name_to_index[logical_name]].append(physical_ptr)
 

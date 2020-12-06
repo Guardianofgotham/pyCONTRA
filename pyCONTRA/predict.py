@@ -29,7 +29,6 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
             w = GetDefaultNoncomplementaryValues()
         else:
             w = GetDefaultComplementaryValues()
-    print(f"len(w): {len(w)}")
 
     if args.gamma < 0:
         if output_parens_destination != "":
@@ -61,5 +60,4 @@ def RunPredictionMode(args: argparse.Namespace, description: list):
             if output_posteriors_destination != "":
                 MakeDirectory(output_posteriors_destination)
         computation_wrapper.Predict(computation_wrapper.GetAllUnits(), w, args.gamma, args.log_base) 
-    print("Inside Prediction")
-    # computation_engine.StopComputeNodes()
+    return

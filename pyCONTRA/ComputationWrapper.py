@@ -39,7 +39,6 @@ class ComputationWrapper(object):
         
         parsable = self.computation_engine.DistributeComputation(parsable,self.shared_info,self.nonshared_info)
         for i in range(len(units)):
-            print(parsable, units)
             # assert not(units[i] >= 0 and units[i] < len(parsable) ), "Out-of-bounds index."
             if(parsable[units[i]]):
                 ret.append(units[i])

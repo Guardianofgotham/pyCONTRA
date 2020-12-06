@@ -24,9 +24,6 @@ class ComputationEngine(DistributedComputationBase):
 
     # routine for performing an individual work unit
     def DoComputation(self, result: list, shared: SharedInfo, nonshared: NonSharedInfo):
-        print("-"*20)
-        print(shared.command)
-        print("-"*20)
         if shared.command == ProcessingType.CHECK_PARSABILITY:
             result = self.CHECK_PARSABILITY(result, nonshared)
             return result
@@ -453,26 +450,23 @@ class ComputationEngine(DistributedComputationBase):
                 self.inference_engine.ComputeOutsideESS()
                 self.inference_engine.ComputePosteriorESS()
             else:
-                print("inside started")
+                print("[+] Computing Inside Scores ...")
                 self.inference_engine.ComputeInside()
-                print("inside finished")
                 if self.options.partition_function_only:
                     print(
                         f"Log partition coefficient for {self.description[nonshared.index].input_filename} :")
                     return
-                print("outside started")
+                print("[+] Computing Outside Scores ...")
                 self.inference_engine.ComputeOutside()
-                print("outside ended")
-                print("posterior started")
+                print("[+] Computing Posterior Probabilities ...")
                 self.inference_engine.ComputePosterior()
-                print("posterior ended")
             solution = SStruct(sstruct, None)
             if self.options.centroid_estimator:
                 print(f"Predicting using centroid estimator.")
                 solution.SetMapping(
                     self.inference_engine.PredictPairingsPosteriorCentroid(shared.gamma))
             else:
-                print(f"Predicting using MEA estimator.")
+                print(f"[+] Predicting using MEA estimator ...")
                 solution.SetMapping(self.inference_engine.PredictPairingsPosterior(shared.gamma))
         # if self.options.output_parens_destination == "":
         #     filename = self.MakeOutputFilename(self.description[nonshared.index].input_filename,
@@ -485,6 +479,7 @@ class ComputationEngine(DistributedComputationBase):
         # if self.options.output_posteriors_destination != "":
         #     raise Exception("Not implemented")
         if self.options.output_parens_destination=="" and self.options.output_bpseq_destination=="" and self.options.output_posteriors_destination=="":
+            print("[+] Writing Parentheisis ...")
             solution.WriteParens()
         return
 

@@ -759,12 +759,12 @@ class InferenceEngine:
                     self.FMi[self.offset[i]+j] = sum_i
         self.F5i[0] = 0
         count = 0
-        print(f"cond1: {cond1}, cond2: {cond2}, cond3: {cond3}, cond4: {cond4}")
-        print(f"sh: {sh},so: {so},s: {s}, helpers: {helpers}")
-        print(f"cach: {cach}, ssn: {ssn}")
+        # print(f"cond1: {cond1}, cond2: {cond2}, cond3: {cond3}, cond4: {cond4}")
+        # print(f"sh: {sh},so: {so},s: {s}, helpers: {helpers}")
+        # print(f"cach: {cach}, ssn: {ssn}")
         
 
-        print(sum(self.FCi))
+        # print(sum(self.FCi))
         for j in range(1, self.L+1):  
             sum_i = NEG_INF
             if (self.allow_unpaired_position[j]):
@@ -775,7 +775,7 @@ class InferenceEngine:
                     count+=1
                     sum_i = Fast_LogPlusEquals(sum_i, self.F5i[k] + self.FCi[self.offset[k+1]+j-1] + self.ScoreExternalPaired() + self.ScoreBasePair(k+1, j) + self.ScoreJunctionA(j, k))
             self.F5i[j] = sum_i
-        print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
+        # print(f"sum(self.F5i): {sum(self.F5i)}, count: {count}")
         # exit(255);
         # raise Exception("Not implemented")
 
@@ -875,7 +875,7 @@ class InferenceEngine:
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
         Z = self.ComputeLogPartitionCoefficient()
-        print(f"Z: {Z}")
+        # print(f"Z: {Z}")
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
                 FM2i = NEG_INF
@@ -919,7 +919,7 @@ class InferenceEngine:
                         self.posterior[self.offset[i+1]+j] += Fast_Exp(self.FM1o[self.offset[i]+j] + self.FCi[self.offset[i+1]+j-1] + self.ScoreJunctionA(
                             j, i) + self.ScoreMultiPaired() + self.ScoreBasePair(i+1, j) - Z)
 
-        print(f"{'-'*20} SUM POSTERIOR: {sum(self.posterior)}{'-'*20}")
+        # print(f"{'-'*20} SUM POSTERIOR: {sum(self.posterior)}{'-'*20}")
         for j in range(1, self.L+1):
             outside = self.F5o[j] - Z
             for k in range(0, j):
@@ -1012,7 +1012,7 @@ class InferenceEngine:
                 k = traceback[self.offset[i]+j]-4
                 traceback_queue.put((i, k))
                 traceback_queue.put((k, j))
-        print(solution)
+        # print(solution)
         return solution
 
     def PredictPairingsPosteriorCentroid(self, gamma):
