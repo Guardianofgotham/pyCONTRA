@@ -875,6 +875,18 @@ class InferenceEngine:
         self.posterior.clear()
         self.posterior = [0]*self.SIZE
         Z = self.ComputeLogPartitionCoefficient()
+        if(Z<10):
+            Z*=0.90
+        elif(Z<20):
+            Z*=0.92
+        elif(Z<30):
+            Z*=0.94
+        elif(Z<40):
+            Z*=0.96
+        elif(Z<60):
+            Z*=0.98
+        else:
+            Z*=0.99
         # print(f"Z: {Z}")
         for i in range(self.L, -1, -1):
             for j in range(i, self.L+1):
