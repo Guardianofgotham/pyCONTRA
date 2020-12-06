@@ -1,5 +1,7 @@
 # pyCONTRA: python implementaion of contrafold
 
+![alt text](https://github.com/Guardianofgotham/pyCONTRA/blob/master/PyContra.png)
+
 ## STATUS: Not Done !!! 
 ## Under development
 
