@@ -3,7 +3,8 @@ from pyCONTRA.ComputationWrapper import *
 
 class OptimizationWrapper:
     def __init__(self, optimization_wrapper: OptimizationWrapper, initial_w: list, training: list, holdout:list):
-        self.
+        #self.  #Changed by hardik Was generating error
+        pass
         
 
     def OptimizationWrapper(self, computation_wrapper):
